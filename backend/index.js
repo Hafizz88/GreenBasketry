@@ -21,6 +21,15 @@ app.use('/api/auth', authRoutes);
     await connectDB(); // connect once before starting the server
     app.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
+      const customers= async () => {
+        try {
+          const res = await client.query('SELECT * FROM customers');
+          console.log('👥 Customers:', res.rows);
+        } catch (err) {
+          console.error('❌ Error fetching customers:', err.message);
+        }
+      };
+      customers();
     });
   } catch (err) {
     console.error('❌ Failed to start server due to DB connection error:', err.message);
