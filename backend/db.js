@@ -1,11 +1,14 @@
-require('dotenv').config();
 const { Pool } = require('pg');
+require('dotenv').config();
 
 const pool = new Pool({
-  connectionString:'postgresql://postgres:labibhafiz3rdclassproject@db.clcdzrnfvhnxwrthhmwe.supabase.co:5432/postgres',
+  connectionString: process.env.DATABASE_URL,
   ssl: {
-    rejectUnauthorized: false // required for Supabase
+    rejectUnauthorized: false
   }
+});
+pool.on('error', (err) => {
+  console.error('Unexpected error on idle client', err);
 });
 
 module.exports = pool;

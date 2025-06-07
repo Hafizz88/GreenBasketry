@@ -1,48 +1,45 @@
-import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
-import "./Login.css";
+import React, { useState } from 'react';
+import { useNavigate, Link } from 'react-router-dom';
 
 function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [role, setRole] = useState("customer");
-  const navigate = useNavigate();
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [role, setRole] = useState('customer');
+  //const navigate = useNavigate();
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleLogin = async () => {
+  try {
+    const res = await fetch('http://localhost:5000/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, role }),
+    });
 
-    // This is a mock for now. Replace with real backend API later
-    if (username && password) {
-      localStorage.setItem("role", role);
-      navigate("/dashboard");
+    const data = await res.json();
+    if (res.ok) {
+      alert(data.message);
+      // navigate('/dashboard'); // Optional
     } else {
-      alert("Please enter credentials");
+      alert(data.error);
     }
-  };
+  } catch (err) {
+    alert('Login failed. Server might be down.');
+    console.error(err);
+  }
+};
 
   return (
-    <div className="login-container">
+    <div className="container">
       <h2>Login as {role.charAt(0).toUpperCase() + role.slice(1)}</h2>
-      <form onSubmit={handleSubmit}>
-        <input
-          type="text"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        /><br />
-        <input
-          type="password"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        /><br />
-        <select value={role} onChange={(e) => setRole(e.target.value)}>
-          <option value="admin">Admin</option>
-          <option value="customer">Customer</option>
-          <option value="rider">Rider</option>
-        </select><br />
-        <button type="submit">Login</button>
-      </form>
+      <input placeholder="Username" value={email} onChange={e => setEmail(e.target.value)} />
+      <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
+      <select value={role} onChange={e => setRole(e.target.value)}>
+        <option value="admin">Admin</option>
+        <option value="customer">Customer</option>
+        <option value="rider">Rider</option>
+      </select>
+      <button onClick={handleLogin}>Login</button>
+      <p>Don't have an account? <Link to="/signup">Sign up</Link></p>
     </div>
   );
 }
