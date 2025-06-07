@@ -1,9 +1,9 @@
-const express = require('express');
-const router = express.Router();
-//const authRoutes = require('../auth');
+// routes/index.js
+import express from 'express';
+import authRoutes from './auth.js'; // include .js extension for ESM
 
-const authRoutes = require('./auth'); 
+const router = express.Router();
+
 router.use('/', authRoutes);
 
-
-module.exports = router;
+export default router;

@@ -1,8 +1,6 @@
-// ✅ Correct
-const pool = require('../db');
-
-const { hashPassword, comparePassword } = require('../utils/hash');
-const { validateEmail, validatePassword } = require('../utils/validator');
+import {client} from '../db.js';
+import { hashPassword, comparePassword } from '../utils/hash.js';
+import { validateEmail, validatePassword } from '../utils/validator.js';
 
 const login = async (req, res) => {
   const { email, password, role } = req.body;
@@ -13,7 +11,7 @@ const login = async (req, res) => {
   const table = role + 's'; // e.g., "riders", "admins", "customers"
 
   try {
-    const userQuery = await pool.query(
+    const userQuery = await client.query(
       `SELECT * FROM ${table} WHERE email = $1`,
       [email]
     );
@@ -29,10 +27,9 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const userId = user[`${role}_id`]; // Safely get admin_id, customer_id, or rider_id
+    const userId = user[`${role}_id`];
 
-    // Log login time
-    await pool.query(
+    await client.query(
       `INSERT INTO login_history(role, user_id, login_time) VALUES($1, $2, NOW())`,
       [role, userId]
     );
@@ -43,7 +40,6 @@ const login = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
-
 
 const signup = async (req, res) => {
   const { name, email, password, phone, vehicle_info, role } = req.body;
@@ -68,13 +64,13 @@ const signup = async (req, res) => {
 
     if (role === 'admin') {
       console.log('📥 Inserting admin...');
-      await pool.query(
+      await client.query(
         `INSERT INTO admins(name, email, password_hash, phone) VALUES($1, $2, $3, $4)`,
         [name, email, hash, phone]
       );
     } else if (role === 'customer') {
       console.log('📥 Inserting customer...');
-      await pool.query(
+      await client.query(
         `INSERT INTO customers(name, email, password_hash, phone, points_earned, points_used) VALUES($1, $2, $3, $4, 0, 0)`,
         [name, email, hash, phone]
       );
@@ -84,7 +80,7 @@ const signup = async (req, res) => {
         return res.status(400).json({ error: 'Missing vehicle info for rider' });
       }
       console.log('📥 Inserting rider...');
-      await pool.query(
+      await client.query(
         `INSERT INTO riders(name, email, password_hash, phone, vehicle_info) VALUES($1, $2, $3, $4, $5)`,
         [name, email, hash, phone, vehicle_info]
       );
@@ -96,7 +92,6 @@ const signup = async (req, res) => {
     res.status(201).json({ message: `${role} registered successfully` });
   } catch (err) {
     if (err.code === '23505') {
-      // duplicate email
       console.log('❌ Duplicate email:', email);
       return res.status(400).json({ error: 'Email already registered' });
     }
@@ -106,6 +101,4 @@ const signup = async (req, res) => {
   }
 };
 
-
-
-module.exports = { login, signup };
+export { login, signup };
