@@ -5,7 +5,7 @@ function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('customer');
-  //const navigate = useNavigate();
+  const navigate = useNavigate();
 
   const handleLogin = async () => {
   try {
@@ -18,7 +18,7 @@ function Login() {
     const data = await res.json();
     if (res.ok) {
       alert(data.message);
-      // navigate('/dashboard'); // Optional
+       navigate('/home'); // Optional
     } else {
       alert(data.error);
     }

@@ -1,57 +1,106 @@
-import React, { useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // Remove this line if unused
+import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import './CustomerHome.css'; // Add custom styles here
+import './CustomerHome.css';
 
 function CustomerHome() {
-  const navigate = useNavigate();
-  navigate('/home'); // Example usage
-  const products = [
-    { id: 1, name: 'Potato Regular', price: 24, image: 'potato.jpg', weight: '1 kg' },
-    { id: 2, name: 'Red Tomato', price: 49, image: 'tomato.jpg', weight: '500 gm' },
-    { id: 3, name: 'Coriander Leaves', price: 25, image: 'coriander.jpg', weight: '100 gm' },
-    { id: 4, name: 'Green Chilli', price: 25, image: 'chilli.jpg', weight: '250 gm' },
-    { id: 5, name: 'Red Potato', price: 25, image: 'red_potato.jpg', weight: '1 kg' },
-  ];
+  const [categories, setCategories] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [selectedCategory, setSelectedCategory] = useState('');
 
+  // Fetch categories
   useEffect(() => {
-    const fetchProducts = async () => {
+    const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products');
-        console.log(response.data);
+        const response = await axios.get('https://dummyjson.com/products/categories'); // DummyJSON API
+        setCategories(response.data);
       } catch (error) {
-        console.error('Error fetching products:', error);
+        console.error('Error fetching categories:', error);
       }
     };
 
-    fetchProducts();
+    fetchCategories();
   }, []);
+
+  // Fetch products by category
+  useEffect(() => {
+    if (selectedCategory) {
+      const fetchProducts = async () => {
+        try {
+          const response = await axios.get(`https://dummyjson.com/products/category/${selectedCategory}`); // DummyJSON API
+          setProducts(response.data.products); // Adjust based on API response structure
+        } catch (error) {
+          console.error('Error fetching products:', error);
+        }
+      };
+
+      fetchProducts();
+    }
+  }, [selectedCategory]);
+
+  // Generate CSV file
+  const generateCSV = () => {
+    if (products.length === 0) {
+      alert('No products available to export.');
+      return;
+    }
+
+    // Define CSV headers
+    const headers = ['ID', 'Title', 'Price', 'Category', 'Thumbnail'];
+
+    // Map products to CSV rows
+    const rows = products.map((product) => [
+      product.id,
+      product.title,
+      product.price,
+      selectedCategory,
+      product.thumbnail || 'N/A',
+    ]);
+
+    // Combine headers and rows
+    const csvContent = [headers, ...rows]
+      .map((row) => row.join(',')) // Convert each row to a comma-separated string
+      .join('\n'); // Combine rows with newline characters
+
+    // Create a Blob and download the file
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${selectedCategory || 'products'}.csv`;
+    link.click();
+    URL.revokeObjectURL(url);
+  };
+
+  console.log(categories); // Check the structure of categories
+  console.log(products);
 
   return (
     <div className="homepage">
       <header className="header">
-        <h1>Welcome to Chaldal</h1>
+        <h1>Welcome to GreenBasketry</h1>
         <input type="text" placeholder="Search for products..." />
       </header>
       <aside className="sidebar">
+        <h2>Categories</h2>
         <ul>
-          <li>Fruits & Vegetables</li>
-          <li>Meat & Fish</li>
-          <li>Cooking</li>
-          <li>Dairy & Eggs</li>
-          <li>Snacks</li>
+          {categories.map((category) => (
+            <li key={category.slug} onClick={() => setSelectedCategory(category.slug)}>
+              {category.name} {/* Render the name property */}
+            </li>
+          ))}
         </ul>
       </aside>
       <main className="main-content">
-        <h2>Fresh Vegetables</h2>
+        <h2>{selectedCategory || 'Select a Category'}</h2>
         <div className="product-grid">
-          {products.map(product => (
+          {products.map((product) => (
             <div key={product.id} className="product-card">
-              <img src={`/images/${product.image}`} alt={product.name} />
-              <h3>{product.name}</h3>
-              <p>{product.weight}</p>
-              <p>৳{product.price}</p>
-              <button>Add to Bag</button>
+              {/* Check if the image and url exist before rendering */}
+              <img src={product.image?.url || product.thumbnail || 'default-image-url.jpg'} alt={product.title || 'Product'} />
+              <h3>{product.title || 'No Title Available'}</h3>
+              <p>৳{product.price || 'N/A'}</p>
+              <button>Add to Cart</button>
+              <button>❤️ Wishlist</button>
             </div>
           ))}
         </div>
