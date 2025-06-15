@@ -1,7 +1,11 @@
-import React from 'react';
+import React, { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // Remove this line if unused
+import axios from 'axios';
 import './CustomerHome.css'; // Add custom styles here
 
 function CustomerHome() {
+  const navigate = useNavigate();
+  navigate('/home'); // Example usage
   const products = [
     { id: 1, name: 'Potato Regular', price: 24, image: 'potato.jpg', weight: '1 kg' },
     { id: 2, name: 'Red Tomato', price: 49, image: 'tomato.jpg', weight: '500 gm' },
@@ -9,6 +13,19 @@ function CustomerHome() {
     { id: 4, name: 'Green Chilli', price: 25, image: 'chilli.jpg', weight: '250 gm' },
     { id: 5, name: 'Red Potato', price: 25, image: 'red_potato.jpg', weight: '1 kg' },
   ];
+
+  useEffect(() => {
+    const fetchProducts = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/products');
+        console.log(response.data);
+      } catch (error) {
+        console.error('Error fetching products:', error);
+      }
+    };
+
+    fetchProducts();
+  }, []);
 
   return (
     <div className="homepage">
