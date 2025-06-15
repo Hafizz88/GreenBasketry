@@ -4,36 +4,39 @@ import { validateEmail, validatePassword } from '../utils/validator.js';
 
 const login = async (req, res) => {
   const { email, password, role } = req.body;
+  console.log('🚀 Login Request:', req.body); // Log incoming request
+
   if (!email || !password || !role) {
     return res.status(400).json({ error: 'Missing credentials' });
   }
 
-  const table = role + 's'; // e.g., "riders", "admins", "customers"
+  const table = role + 's'; // e.g., "customers", "admins", "riders"
 
   try {
     const userQuery = await client.query(
       `SELECT * FROM ${table} WHERE email = $1`,
       [email]
     );
+    console.log('📥 User Query Result:', userQuery.rows); // Log database query result
 
     if (userQuery.rows.length === 0) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const user = userQuery.rows[0];
-
     const valid = await comparePassword(password, user.password_hash);
+    console.log('✅ Password Valid:', valid); // Log password comparison result
+
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const userId = user[`${role}_id`];
-
-    await client.query(
+    /* await client.query(
       `INSERT INTO login_history(role, user_id, login_time) VALUES($1, $2, NOW())`,
       [role, userId]
     );
-
+ */
     res.status(200).json({ message: 'Login successful', user });
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);
