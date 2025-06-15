@@ -9,7 +9,7 @@ function Login() {
 
   const handleLogin = async () => {
   try {
-    const res = await fetch('http://localhost:5000/auth/login', {
+    const res = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password, role }),
@@ -31,7 +31,7 @@ function Login() {
   return (
     <div className="container">
       <h2>Login as {role.charAt(0).toUpperCase() + role.slice(1)}</h2>
-      <input placeholder="Username" value={email} onChange={e => setEmail(e.target.value)} />
+      <input placeholder="E-mail" value={email} onChange={e => setEmail(e.target.value)} />
       <input type="password" placeholder="Password" value={password} onChange={e => setPassword(e.target.value)} />
       <select value={role} onChange={e => setRole(e.target.value)}>
         <option value="admin">Admin</option>
