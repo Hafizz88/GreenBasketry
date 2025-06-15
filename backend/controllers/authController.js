@@ -25,18 +25,17 @@ const login = async (req, res) => {
 
     const user = userQuery.rows[0];
     const valid = await comparePassword(password, user.password_hash);
-    console.log('✅ Password Valid:', valid); // Log password comparison result
-
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
     const userId = user[`${role}_id`];
-    /* await client.query(
+
+    await client.query(
       `INSERT INTO login_history(role, user_id, login_time) VALUES($1, $2, NOW())`,
       [role, userId]
     );
- */
+
     res.status(200).json({ message: 'Login successful', user });
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);

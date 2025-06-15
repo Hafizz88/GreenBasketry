@@ -38,7 +38,7 @@ function Signup() {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
-        navigate('/');
+        navigate('/product'); // Redirect to product page
       } else {
         alert(data.error);
       }
