@@ -38,6 +38,8 @@ function Signup() {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
+        localStorage.setItem('userId', data.user[`${role}_id`]);
+        localStorage.setItem('role', role);
         navigate('/product'); // Redirect to product page
       } else {
         alert(data.error);

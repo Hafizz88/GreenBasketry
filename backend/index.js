@@ -17,6 +17,7 @@ app.use(express.json());
 app.use('/', routes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes); // Add product routes
+app.use('/api/cart',cartRoutes); // Add cart routes
 
 (async () => {
   try {

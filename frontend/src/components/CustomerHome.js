@@ -6,12 +6,14 @@ function CustomerHome() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
 
   // Fetch categories
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('https://dummyjson.com/products/categories'); // DummyJSON API
+        const response = await axios.get('http://localhost:5000/api/products/categories');
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -26,8 +28,8 @@ function CustomerHome() {
     if (selectedCategory) {
       const fetchProducts = async () => {
         try {
-          const response = await axios.get(`https://dummyjson.com/products/category/${selectedCategory}`); // DummyJSON API
-          setProducts(response.data.products); // Adjust based on API response structure
+          const response = await axios.get(`http://localhost:5000/api/products/category/${selectedCategory}`);
+          setProducts(response.data);
         } catch (error) {
           console.error('Error fetching products:', error);
         }
@@ -37,67 +39,69 @@ function CustomerHome() {
     }
   }, [selectedCategory]);
 
-  // Generate CSV file
-  const generateCSV = () => {
-    if (products.length === 0) {
-      alert('No products available to export.');
-      return;
-    }
+  // Fetch products by name (search)
+  useEffect(() => {
+    const delayDebounce = setTimeout(() => {
+      const fetchSearchResults = async () => {
+        if (searchTerm.trim() === '') {
+          setSearchResults([]);
+          return;
+        }
 
-    // Define CSV headers
-    const headers = ['ID', 'Title', 'Price', 'Category', 'Thumbnail'];
+        try {
+          const response = await axios.get(`http://localhost:5000/api/products/search?name=${searchTerm}`);
+          setSearchResults(response.data);
+        } catch (error) {
+          console.error('Error fetching search results:', error);
+        }
+      };
 
-    // Map products to CSV rows
-    const rows = products.map((product) => [
-      product.id,
-      product.title,
-      product.price,
-      selectedCategory,
-      product.thumbnail || 'N/A',
-    ]);
+      fetchSearchResults();
+    }, 300); // debounce delay
 
-    // Combine headers and rows
-    const csvContent = [headers, ...rows]
-      .map((row) => row.join(',')) // Convert each row to a comma-separated string
-      .join('\n'); // Combine rows with newline characters
+    return () => clearTimeout(delayDebounce);
+  }, [searchTerm]);
 
-    // Create a Blob and download the file
-    const blob = new Blob([csvContent], { type: 'text/csv' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${selectedCategory || 'products'}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
-
-  console.log(categories); // Check the structure of categories
-  console.log(products);
+  // Decide what products to show
+  const displayedProducts = searchTerm ? searchResults : products;
 
   return (
     <div className="homepage">
       <header className="header">
         <h1>Welcome to GreenBasketry</h1>
-        <input type="text" placeholder="Search for products..." />
+        <input
+          type="text"
+          placeholder="Search for products..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
       </header>
+
       <aside className="sidebar">
         <h2>Categories</h2>
         <ul>
           {categories.map((category) => (
-            <li key={category.slug} onClick={() => setSelectedCategory(category.slug)}>
-              {category.name} {/* Render the name property */}
+            <li key={category} onClick={() => {
+              setSelectedCategory(category);
+              setSearchTerm('');
+              setSearchResults([]);
+            }}>
+              {category}
             </li>
           ))}
         </ul>
       </aside>
+
       <main className="main-content">
-        <h2>{selectedCategory || 'Select a Category'}</h2>
+        <h2>{searchTerm ? `Search Results for "${searchTerm}"` : selectedCategory || 'Select a Category'}</h2>
         <div className="product-grid">
-          {products.map((product) => (
-            <div key={product.id} className="product-card">
-              {/* Check if the image and url exist before rendering */}
-              <img src={product.image?.url || product.thumbnail || 'default-image-url.jpg'} alt={product.title || 'Product'} />
-              <h3>{product.title || 'No Title Available'}</h3>
+          {displayedProducts.map((product) => (
+            <div key={product.product_id || product.id} className="product-card">
+              <img
+                src={product.image?.url || product.image_url || product.thumbnail || 'default-image-url.jpg'}
+                alt={product.name || product.title || 'Product'}
+              />
+              <h3>{product.name || product.title || 'No Title'}</h3>
               <p>৳{product.price || 'N/A'}</p>
               <button>Add to Cart</button>
               <button>❤️ Wishlist</button>
@@ -105,6 +109,7 @@ function CustomerHome() {
           ))}
         </div>
       </main>
+
       <footer className="footer">
         <p>Help | File a Complaint</p>
       </footer>

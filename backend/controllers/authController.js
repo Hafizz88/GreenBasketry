@@ -30,7 +30,7 @@ const login = async (req, res) => {
     }
 
     const userId = user[`${role}_id`];
-
+    //localStorage.setItem('userId', userId);
     /*await client.query(
       `INSERT INTO login_history(role, user_id, login_time) VALUES($1, $2, NOW())`,
       [role, userId]
@@ -70,12 +70,22 @@ const signup = async (req, res) => {
         `INSERT INTO admins(name, email, password_hash, phone) VALUES($1, $2, $3, $4)`,
         [name, email, hash, phone]
       );
+      userID = await client.query(
+        `SELECT admin_id FROM admins WHERE email = $1`,
+        [email]
+      );
+      //localStorage.setItem('userID', userID.rows[0].admin_id);
     } else if (role === 'customer') {
       console.log('📥 Inserting customer...');
       await client.query(
         `INSERT INTO customers(name, email, password_hash, phone, points_earned, points_used) VALUES($1, $2, $3, $4, 0, 0)`,
         [name, email, hash, phone]
       );
+      userID = await client.query(
+        `SELECT customer_id FROM customers WHERE email = $1`,
+        [email]
+      );
+      localStorage.setItem('userID', userID.rows[0].customer_id);
     } else if (role === 'rider') {
       if (!vehicle_info) {
         console.log('❌ Missing vehicle info for rider');
@@ -86,6 +96,11 @@ const signup = async (req, res) => {
         `INSERT INTO riders(name, email, password_hash, phone, vehicle_info) VALUES($1, $2, $3, $4, $5)`,
         [name, email, hash, phone, vehicle_info]
       );
+      userID = await client.query(
+        `SELECT rider_id FROM riders WHERE email = $1`,
+        [email]
+      );
+      localStorage.setItem('userID', userID.rows[0].rider_id);
     } else {
       console.log('❌ Invalid role');
       return res.status(400).json({ error: 'Invalid role' });

@@ -18,6 +18,8 @@ function Login() {
     const data = await res.json();
     if (res.ok) {
       alert(data.message);
+      localStorage.setItem('userId', data.user[`${role}_id`]);
+      localStorage.setItem('role', role);
        navigate('/home'); // Optional
     } else {
       alert(data.error);
