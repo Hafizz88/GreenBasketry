@@ -22,6 +22,7 @@ async function getOrCreateActiveCart(customerId) {
 export const getCart = async (req, res) => {
   const { customer_id } = req.query;
   try {
+    console.log('📥 Fetching cart for customer:', customer_id);
     const cart = await getOrCreateActiveCart(customer_id);
     // Get cart items with product info
     const itemsRes = await client.query(

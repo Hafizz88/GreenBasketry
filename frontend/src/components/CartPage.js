@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
-import './CartProfilePages.css';
+import './CartPageProfile.css';
 
 function CartPage() {
   const [cart, setCart] = useState(null);
@@ -8,12 +8,12 @@ function CartPage() {
   const [loading, setLoading] = useState(true);
 
   // Replace with actual customer ID from auth/session
-  const customerId = 1;
+  const customerId = localStorage.getItem('userId');
 
   // Function to fetch cart and items
   const fetchCart = async () => {
     try {
-      const res = await axios.get(`/api/cart?customer_id=${customerId}`);
+      const res = await axios.get(`http://localhost:5000/api/cart?customer_id=${customerId}`);
       setCart(res.data.cart);
       setCartItems(res.data.items);
     } catch (err) {
@@ -31,7 +31,7 @@ function CartPage() {
   // Function to handle add to cart
   const handleAddToCart = async (productId) => {
     try {
-      await axios.post('/api/cart', {
+      await axios.post(`http://localhost:5000/api/cart`, {
         customer_id: customerId,
         product_id: productId,
         quantity: 1
@@ -47,7 +47,7 @@ function CartPage() {
   // Function to remove an item from cart
   const handleRemoveFromCart = async (productId) => {
     try {
-      await axios.delete('/api/cart', {
+      await axios.delete(`http://localhost:5000/api/cart`, {
         data: { customer_id: customerId, product_id: productId }
       });
       alert('Removed from cart!');
@@ -61,7 +61,7 @@ function CartPage() {
   // Function to update the cart item quantity
   const handleUpdateCartItem = async (productId, newQuantity) => {
     try {
-      await axios.put('/api/cart', {
+      await axios.put(`http://localhost:5000/api/cart`, {
         customer_id: customerId,
         product_id: productId,
         quantity: newQuantity
@@ -77,28 +77,30 @@ function CartPage() {
   if (loading) return <div>Loading...</div>;
   if (!cart) return <div>No active cart found.</div>;
 
-  return (
-    <div>
-      <h2>Your Cart</h2>
-      <ul>
-        {cartItems.map(item => (
-          <li key={item.cart_item_id}>
-            <img src={item.image_url} alt={item.name} width={60} />
-            <span>{item.name}</span>
-            <span>Qty: {item.quantity}</span>
-            <span>Price: ৳{item.price}</span>
-            <button onClick={() => handleRemoveFromCart(item.product_id)}>Remove</button>
-            {/* Optionally, add update quantity functionality */}
-            <button onClick={() => handleUpdateCartItem(item.product_id, item.quantity + 1)}>Increase Quantity</button>
-          </li>
-        ))}
-      </ul>
-      <div>
-        <strong>Total: ৳{cart.price}</strong>
-      </div>
-      <button>Checkout</button>
+return (
+  <div className="cart-container">
+    <h2>Your Cart</h2>
+    <ul className="cart-list">
+      {cartItems.map(item => (
+        <li key={item.cart_item_id} className="cart-item">
+          <img src={item.image_url} alt={item.name} />
+          <span>{item.name}</span>
+          <span>Qty: {item.quantity}</span>
+          <span>৳{item.price}</span>
+          <button onClick={() => handleUpdateCartItem(item.product_id, item.quantity + 1)}>+ Qty</button>
+          <button onClick={() => handleRemoveFromCart(item.product_id)}>Remove</button>
+        </li>
+      ))}
+    </ul>
+    <div className="cart-total">
+      Total: ৳{cart.price}
     </div>
-  );
+    <button className="checkout-btn">Checkout</button>
+  </div>
+);
 }
+
+
+
 
 export default CartPage;
