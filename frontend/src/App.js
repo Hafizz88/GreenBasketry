@@ -11,6 +11,7 @@ import './App.css';
 //import Signup from './components/Signup.js';
 //import './App.css';
 import Product from './components/Product.js';
+import CartPage from './components/CartPage.js';
 
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
         <Route path="/signup" element={<Signup />} />
 
         <Route path="/home" element={<CustomerHome />} />
+        <Route path="/cart" element={<CartPage />} />
 
         <Route path="/product" element={<Product />} />
       </Routes>

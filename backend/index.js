@@ -5,6 +5,7 @@ import authRoutes from './routes/authRoutes.js'; // include .js extension
 import dotenv from 'dotenv';
 import { client, connectDB } from './db.js';     // include .js extension
 import productRoutes from './routes/productRoutes.js'; // include .js extension
+import cartRoutes from './routes/cartRoutes.js';
 
 dotenv.config();
 
@@ -17,7 +18,7 @@ app.use(express.json());
 app.use('/', routes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes); // Add product routes
-app.use('/api/cart',cartRoutes); // Add cart routes
+app.use('/api/cart', cartRoutes); // Add cart routes
 
 (async () => {
   try {

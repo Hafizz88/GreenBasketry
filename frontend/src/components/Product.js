@@ -10,6 +10,36 @@ function Product() {
       .catch(err => console.error('Failed to load products', err));
   }, []);
 
+const handleAddToCart = async (productId) => {
+  try {
+    await axios.post('http://localhost:5000/api/cart', {
+      customer_id: 1,  // replace this with actual logged-in user ID
+      product_id: productId,
+      quantity: 1
+    });
+    alert('Added to cart!');
+    // Redirect or refresh cart if needed:
+    // window.location.href = '/cart';
+  } catch (err) {
+    console.error('Add to cart failed', err);
+    alert('Failed to add to cart');
+  }
+};
+
+
+  const handleAddToWishlist = async (productId) => {
+    try {
+      await axios.post('http://localhost:5000/api/wishlist', {
+        customer_id: 1, // Replace with actual logged-in user ID
+        product_id: productId
+      });
+      alert('Added to wishlist!');
+    } catch (err) {
+      console.error('Add to wishlist failed', err);
+      alert('Failed to add to wishlist');
+    }
+  };
+
   return (
     <div className="product-grid">
       <p>Available Products:</p>
@@ -20,6 +50,12 @@ function Product() {
           <p>{product.category}</p>
           <p>${product.price}</p>
           <p>{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</p>
+          <button onClick={() => handleAddToCart(product.product_id)}>
+            Add to Cart
+          </button>
+          <button onClick={() => handleAddToWishlist(product.product_id)}>
+            Wishlist
+          </button>
         </div>
       ))}
     </div>

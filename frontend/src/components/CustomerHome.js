@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Link } from 'react-router-dom'; // Import Link from react-router-dom
 import './CustomerHome.css';
 
 function CustomerHome() {
@@ -75,6 +76,9 @@ function CustomerHome() {
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
         />
+        <Link to="/profile">
+          <button className="profile-btn">My Profile</button>
+        </Link>
       </header>
 
       <aside className="sidebar">
