@@ -10,9 +10,10 @@ const login = async (req, res) => {
     return res.status(400).json({ error: 'Missing credentials' });
   }
 
-  const table = role + 's'; // e.g., "customers", "admins", "riders"
+  const table = role + 's'; // e.g., "customers", "riders"
 
   try {
+    // Query the database for the user with the given email
     const userQuery = await client.query(
       `SELECT * FROM ${table} WHERE email = $1`,
       [email]
@@ -24,24 +25,21 @@ const login = async (req, res) => {
     }
 
     const user = userQuery.rows[0];
+
+    // For customers or riders, compare the password with bcrypt
     const valid = await comparePassword(password, user.password_hash);
     if (!valid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const userId = user[`${role}_id`];
-    //localStorage.setItem('userId', userId);
-    /*await client.query(
-      `INSERT INTO login_history(role, user_id, login_time) VALUES($1, $2, NOW())`,
-      [role, userId]
-    );*/
-
+    const userId = user[`${role}_id`];  // Get the user ID based on the role (e.g., customer_id or rider_id)
     res.status(200).json({ message: 'Login successful', user });
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+
 
 const signup = async (req, res) => {
   const { name, email, password, phone, vehicle_info, role } = req.body;

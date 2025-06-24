@@ -7,6 +7,8 @@ import { client, connectDB } from './db.js';     // include .js extension
 import productRoutes from './routes/productRoutes.js'; // include .js extension
 import cartRoutes from './routes/cartRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js'; // include .js extension
+import adminRoutes from './routes/adminRoutes.js';
+
 
 dotenv.config();
 
@@ -15,7 +17,7 @@ const app = express();
 
 app.use(cors({ origin: 'http://localhost:3000', credentials: true }));
 app.use(express.json());
-
+app.use('/api/admin', adminRoutes);
 app.use('/', routes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes); // Add product routes
