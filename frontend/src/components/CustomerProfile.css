@@ -1,0 +1,74 @@
+/* CartProfilePages.css */
+
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f8f9fa;
+  margin: 0;
+  padding: 0;
+}
+
+div {
+  max-width: 800px;
+  margin: 40px auto;
+  padding: 24px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+h2 {
+  color: #2c3e50;
+  margin-bottom: 10px;
+}
+
+h3 {
+  margin-top: 30px;
+  color: #34495e;
+  border-bottom: 2px solid #ddd;
+  padding-bottom: 6px;
+}
+
+p {
+  margin: 6px 0;
+  font-size: 16px;
+  color: #333;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+  margin-top: 10px;
+}
+
+li {
+  padding: 10px 15px;
+  margin-bottom: 8px;
+  background-color: #f1f1f1;
+  border-radius: 6px;
+  font-size: 15px;
+  color: #333;
+  transition: background-color 0.2s ease;
+}
+
+li:hover {
+  background-color: #e0e0e0;
+}
+
+strong {
+  color: #2c3e50;
+}
+
+@media (max-width: 600px) {
+  div {
+    padding: 16px;
+    margin: 20px;
+  }
+
+  li {
+    font-size: 14px;
+  }
+
+  p {
+    font-size: 15px;
+  }
+}

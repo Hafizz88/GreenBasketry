@@ -44,6 +44,7 @@ export const removeFromWishlist = async (req, res) => {
 
 export const getWishlist = async (req, res) => {
     try {
+        console.log('Fetching wishlist for customer:', req.query.customer_id);
         const { customer_id } = req.query;
         const result = await client.query(
             `SELECT w.wishlist_id, w.product_id, p.name, p.price 
