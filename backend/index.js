@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import { client, connectDB } from './db.js';     // include .js extension
 import productRoutes from './routes/productRoutes.js'; // include .js extension
 import cartRoutes from './routes/cartRoutes.js';
+import wishlistRoutes from './routes/wishlistRoutes.js'; // include .js extension
 
 dotenv.config();
 
@@ -19,6 +20,7 @@ app.use('/', routes);
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes); // Add product routes
 app.use('/api/cart', cartRoutes); // Add cart routes
+app.use('/api/wishlist', wishlistRoutes); // Add wishlist routes
 
 (async () => {
   try {

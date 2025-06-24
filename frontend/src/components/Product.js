@@ -12,20 +12,34 @@ function Product() {
 
 const handleAddToCart = async (productId) => {
   try {
-    await axios.post('http://localhost:5000/api/cart', {
-      customer_id: 1,  // replace this with actual logged-in user ID
+    console.log("🛒 Add to cart button clicked! Product ID:", productId);
+    const storedCustomerId = localStorage.getItem('customer_id');
+    console.log("📦 Retrieved customer_id from localStorage:", storedCustomerId);
+
+    const customerId = parseInt(storedCustomerId, 10);
+    if (!customerId || isNaN(customerId)) {
+      alert("Customer ID is invalid or missing!");
+      return;
+    }
+
+    console.log("➡️ Sending POST to /api/cart with:", {
+      customer_id: customerId,
       product_id: productId,
       quantity: 1
     });
+
+    await axios.post('http://localhost:5000/api/cart', {
+      customer_id: customerId,
+      product_id: productId,
+      quantity: 1
+    });
+
     alert('Added to cart!');
-    // Redirect or refresh cart if needed:
-    // window.location.href = '/cart';
   } catch (err) {
-    console.error('Add to cart failed', err);
+    console.error('❌ Add to cart failed:', err.response?.data || err.message);
     alert('Failed to add to cart');
   }
 };
-
 
   const handleAddToWishlist = async (productId) => {
     try {
@@ -50,9 +64,27 @@ const handleAddToCart = async (productId) => {
           <p>{product.category}</p>
           <p>${product.price}</p>
           <p>{product.stock > 0 ? 'In Stock' : 'Out of Stock'}</p>
-          <button onClick={() => handleAddToCart(product.product_id)}>
-            Add to Cart
-          </button>
+          <button 
+  onClick={(e) => {
+    console.log("🔥 BUTTON CLICKED!");
+    console.log("Event object:", e);
+    console.log("Product ID:", product.product_id);
+    console.log("Product object:", product);
+    e.preventDefault();
+    e.stopPropagation();
+    
+    // Check if function exists
+    if (typeof handleAddToCart === 'function') {
+      console.log("✅ handleAddToCart function exists");
+      handleAddToCart(product.product_id);
+    } else {
+      console.log("❌ handleAddToCart function NOT found");
+    }
+  }}
+  style={{ backgroundColor: 'red', color: 'white', padding: '10px' }}
+>
+  DEBUG - Add to Cart
+</button>
           <button onClick={() => handleAddToWishlist(product.product_id)}>
             Wishlist
           </button>

@@ -3,6 +3,7 @@ import { client } from '../db.js';
 // Helper: Get or create active cart for a customer
 async function getOrCreateActiveCart(customerId) {
   // Try to find active cart
+  console.log('📩 getOrCreateActiveCart called with:', customerId);
   let res = await client.query(
     `SELECT * FROM carts WHERE customer_id = $1 AND is_active = true LIMIT 1`,
     [customerId]

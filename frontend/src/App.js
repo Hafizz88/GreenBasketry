@@ -12,6 +12,7 @@ import './App.css';
 //import './App.css';
 import Product from './components/Product.js';
 import CartPage from './components/CartPage.js';
+import CustomerProfile from './components/CustomerProfile.js';          
 
 
 function App() {
@@ -23,7 +24,8 @@ function App() {
 
         <Route path="/home" element={<CustomerHome />} />
         <Route path="/cart" element={<CartPage />} />
-
+        <Route path="/profile" element={<CustomerProfile />} />
+        {/* Add other routes as needed */}
         <Route path="/product" element={<Product />} />
       </Routes>
     </Router>
