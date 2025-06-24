@@ -8,7 +8,7 @@ import productRoutes from './routes/productRoutes.js'; // include .js extension
 import cartRoutes from './routes/cartRoutes.js';
 import wishlistRoutes from './routes/wishlistRoutes.js'; // include .js extension
 import adminRoutes from './routes/adminRoutes.js';
-
+import customerRoutes from './routes/customerRoutes.js'; // include .js extension
 
 dotenv.config();
 
@@ -23,6 +23,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/products', productRoutes); // Add product routes
 app.use('/api/cart', cartRoutes); // Add cart routes
 app.use('/api/wishlist', wishlistRoutes); // Add wishlist routes
+app.use('/api/customers', customerRoutes); // Add customer routes
 
 (async () => {
   try {
