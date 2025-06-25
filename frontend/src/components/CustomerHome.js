@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import './CustomerHome.css';
@@ -9,7 +9,65 @@ function CustomerHome() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
+  const [inputFocused, setInputFocused] = useState(false);
   const navigate = useNavigate();
+  const placeholderRef = useRef(null);
+  const brandRef = useRef(null);
+
+  // Animated search placeholder effect
+  useEffect(() => {
+    const text = "Search for products...";
+    let i = 0;
+    let forward = true;
+    let timeout;
+    function type() {
+      if (placeholderRef.current) {
+        placeholderRef.current.textContent = text.slice(0, i);
+      }
+      if (forward) {
+        if (i < text.length) {
+          i++;
+          timeout = setTimeout(type, 80);
+        } else {
+          forward = false;
+          timeout = setTimeout(type, 1200);
+        }
+      } else {
+        if (i > 0) {
+          i--;
+          timeout = setTimeout(type, 30);
+        } else {
+          forward = true;
+          timeout = setTimeout(type, 400);
+        }
+      }
+    }
+    type();
+    return () => clearTimeout(timeout);
+  }, []);
+
+  // Animated brand name effect
+  useEffect(() => {
+    const text = "GreenBasketry";
+    let i = 0;
+    let timeout;
+    function type() {
+      if (brandRef.current) {
+        brandRef.current.textContent = text.slice(0, i);
+      }
+      if (i < text.length) {
+        i++;
+        timeout = setTimeout(type, 120);
+      } else {
+        setTimeout(() => {
+          i = 0;
+          type();
+        }, 1200);
+      }
+    }
+    type();
+    return () => clearTimeout(timeout);
+  }, []);
 
   // Fetch categories
   useEffect(() => {
@@ -80,7 +138,7 @@ function CustomerHome() {
         quantity: 1,
       };
 
-      const response = await axios.post('http://localhost:5000/api/cart', payload);
+      await axios.post('http://localhost:5000/api/cart', payload);
       alert('Added to cart!');
     } catch (err) {
       console.error('Error adding to cart:', err);
@@ -137,73 +195,88 @@ function CustomerHome() {
   return (
     <div className="homepage">
       <header className="header">
-        <h1>Welcome to GreenBasketry</h1>
-
-        <input
-          type="text"
-          placeholder="Search for products..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-
-        <div className="header-buttons">
-          <button className="profile-btn" onClick={handleProfileClick}>
-            My Profile
-          </button>
-          <button className="cart-btn" onClick={handleCartClick}>
-            🛒 Cart
-          </button>
-        </div>
-      </header>
-
-      <aside className="sidebar">
-        <h2>Categories</h2>
-        <ul>
-          {categories.map((category) => (
-            <li
-              key={category}
-              onClick={() => {
-                setSelectedCategory(category);
-                setSearchTerm('');
-                setSearchResults([]);
-              }}
-            >
-              {category}
-            </li>
-          ))}
-        </ul>
-      </aside>
-
-      <main className="main-content">
-        <h2>{searchTerm ? `Search Results for "${searchTerm}"` : selectedCategory || 'Select a Category'}</h2>
-        <div className="product-grid">
-          {displayedProducts.map((product) => (
-            <div key={product.product_id || product.id} className="product-card">
-              <img
-                src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
-                alt={product.name || product.title || 'No Title'}
+        <div className="welcome-section">
+          <div className="welcome-left">
+            <h1 className="dynamic-title">
+              <span>Welcome to</span>
+              <span className="brand-gradient" ref={brandRef}></span>
+            </h1>
+            <div className="search-bar-animated">
+              <input
+                type="text"
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                onFocus={() => setInputFocused(true)}
+                onBlur={() => setInputFocused(false)}
+                autoComplete="off"
+                id="animated-search"
               />
-              <h3>{product.name || product.title || 'No Title'}</h3>
-              <p>৳{product.price || 'N/A'}</p>
-
-              <button 
-                onClick={() => handleAddToCart(product.product_id || product.id)}
-                style={{ backgroundColor: 'green', color: 'white', margin: '5px' }}
-              >
-                Add to Cart
+              {(!searchTerm && !inputFocused) && (
+                <span className="search-placeholder" ref={placeholderRef}></span>
+              )}
+              <button className="search-btn">Search</button>
+            </div>
+          </div>
+          <div className="welcome-right">
+            <div className="profile-cart-card">
+              <button className="profile-btn" onClick={handleProfileClick}>
+                <span role="img" aria-label="profile">👤</span> My Profile
               </button>
-
-              <button
-                onClick={() => handleAddToWishlist(product.product_id || product.id)}
-                style={{ backgroundColor: 'red', color: 'white', margin: '5px' }}
-              >
-                ❤️ Wishlist
+              <button className="cart-btn" onClick={handleCartClick}>
+                <span role="img" aria-label="cart">🛒</span> Cart
               </button>
             </div>
-          ))}
+          </div>
         </div>
-      </main>
+      </header>
+      <div className="main-area">
+        <aside className="sidebar">
+          <h2>Categories</h2>
+          <ul>
+            {categories.map((category) => (
+              <li
+                key={category}
+                onClick={() => {
+                  setSelectedCategory(category);
+                  setSearchTerm('');
+                  setSearchResults([]);
+                }}
+              >
+                {category}
+              </li>
+            ))}
+          </ul>
+        </aside>
+        <main className="main-content">
+          <h2>{searchTerm ? `Search Results for "${searchTerm}"` : selectedCategory || 'Select a Category'}</h2>
+          <div className="product-grid">
+            {displayedProducts.map((product) => (
+              <div key={product.product_id || product.id} className="product-card">
+                <img
+                  src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
+                  alt={product.name || product.title || 'No Title'}
+                />
+                <h3>{product.name || product.title || 'No Title'}</h3>
+                <p>৳{product.price || 'N/A'}</p>
 
+                <button 
+                  onClick={() => handleAddToCart(product.product_id || product.id)}
+                  style={{ backgroundColor: 'green', color: 'white', margin: '5px' }}
+                >
+                  Add to Cart
+                </button>
+
+                <button
+                  onClick={() => handleAddToWishlist(product.product_id || product.id)}
+                  style={{ backgroundColor: 'red', color: 'white', margin: '5px' }}
+                >
+                  ❤️ Wishlist
+                </button>
+              </div>
+            ))}
+          </div>
+        </main>
+      </div>
       <footer className="footer">
         <p>Help | File a Complaint</p>
       </footer>

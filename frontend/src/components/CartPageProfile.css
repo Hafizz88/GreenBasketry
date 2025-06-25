@@ -85,3 +85,16 @@
 .checkout-btn:hover {
   background-color: #0b5ed7;
 }
+
+.cart-actions {
+  display: flex;
+  gap: 10px;
+  min-width: 220px; /* Optional: ensures enough space for both buttons */
+}
+
+.cart-actions button {
+  flex: 1 1 0;
+  min-width: 90px;
+  max-width: 140px;
+  /* Keep your existing button styles here */
+}
