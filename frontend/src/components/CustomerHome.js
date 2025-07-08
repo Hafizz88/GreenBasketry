@@ -10,6 +10,8 @@ function CustomerHome() {
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [inputFocused, setInputFocused] = useState(false);
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
+  const [showTopSelling, setShowTopSelling] = useState(false);
   const navigate = useNavigate();
   const placeholderRef = useRef(null);
   const brandRef = useRef(null);
@@ -121,6 +123,15 @@ function CustomerHome() {
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
+
+  // Fetch top selling products
+  useEffect(() => {
+    if (showTopSelling) {
+      axios.get('http://localhost:5000/api/products/top-selling')
+        .then(res => setTopSellingProducts(res.data))
+        .catch(err => console.error('Failed to fetch top selling products', err));
+    }
+  }, [showTopSelling]);
 
   const handleAddToCart = async (productId) => {
     try {
@@ -245,35 +256,50 @@ function CustomerHome() {
                 {category}
               </li>
             ))}
+            <li
+              className={showTopSelling ? 'active top-selling' : 'top-selling'}
+              onClick={() => setShowTopSelling(true)}
+            >
+              🔥 Top Selling
+            </li>
           </ul>
         </aside>
         <main className="main-content">
           <h2>{searchTerm ? `Search Results for "${searchTerm}"` : selectedCategory || 'Select a Category'}</h2>
           <div className="product-grid">
-            {displayedProducts.map((product) => (
-              <div key={product.product_id || product.id} className="product-card">
-                <img
-                  src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
-                  alt={product.name || product.title || 'No Title'}
-                />
-                <h3>{product.name || product.title || 'No Title'}</h3>
-                <p>৳{product.price || 'N/A'}</p>
+            {showTopSelling
+              ? topSellingProducts.map(product => (
+                  <div key={product.product_id} className="product-card">
+                    <img src={product.image_url || 'default-image.jpg'} alt={product.name} />
+                    <h3>{product.name}</h3>
+                    <p>৳{product.price}</p>
+                    <p className="sales-count">🔥 Sold: {product.total_sold}</p>
+                  </div>
+                ))
+              : displayedProducts.map((product) => (
+                  <div key={product.product_id || product.id} className="product-card">
+                    <img
+                      src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
+                      alt={product.name || product.title || 'No Title'}
+                    />
+                    <h3>{product.name || product.title || 'No Title'}</h3>
+                    <p>৳{product.price || 'N/A'}</p>
 
-                <button 
-                  onClick={() => handleAddToCart(product.product_id || product.id)}
-                  style={{ backgroundColor: 'green', color: 'white', margin: '5px' }}
-                >
-                  Add to Cart
-                </button>
+                    <button 
+                      onClick={() => handleAddToCart(product.product_id || product.id)}
+                      style={{ backgroundColor: 'green', color: 'white', margin: '5px' }}
+                    >
+                      Add to Cart
+                    </button>
 
-                <button
-                  onClick={() => handleAddToWishlist(product.product_id || product.id)}
-                  style={{ backgroundColor: 'red', color: 'white', margin: '5px' }}
-                >
-                  ❤️ Wishlist
-                </button>
-              </div>
-            ))}
+                    <button
+                      onClick={() => handleAddToWishlist(product.product_id || product.id)}
+                      style={{ backgroundColor: 'red', color: 'white', margin: '5px' }}
+                    >
+                      ❤️ Wishlist
+                    </button>
+                  </div>
+                ))}
           </div>
         </main>
       </div>
