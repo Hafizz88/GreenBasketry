@@ -12,6 +12,7 @@ import ManageProducts from './components/ManageProducts';
 import AddProduct from './components/AddProduct';
 import ManageCoupons from './components/ManageCoupons';
 import SetDiscount from './components/SetDiscount';          
+import RiderHome from './components/RiderHome';
 
 
 function App() {

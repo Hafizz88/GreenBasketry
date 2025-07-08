@@ -6,12 +6,12 @@ import './CustomerHome.css';
 function CustomerHome() {
   const [categories, setCategories] = useState([]);
   const [products, setProducts] = useState([]);
+  const [topSellingProducts, setTopSellingProducts] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [searchResults, setSearchResults] = useState([]);
   const [inputFocused, setInputFocused] = useState(false);
-  const [topSellingProducts, setTopSellingProducts] = useState([]);
-  const [showTopSelling, setShowTopSelling] = useState(false);
+  const [activeTab, setActiveTab] = useState('categories'); // 'categories' or 'top-selling'
   const navigate = useNavigate();
   const placeholderRef = useRef(null);
   const brandRef = useRef(null);
@@ -85,6 +85,20 @@ function CustomerHome() {
     fetchCategories();
   }, []);
 
+  // Fetch top selling products
+  useEffect(() => {
+    const fetchTopSellingProducts = async () => {
+      try {
+        const response = await axios.get('http://localhost:5000/api/products/top-selling?limit=8');
+        setTopSellingProducts(response.data);
+      } catch (error) {
+        console.error('Error fetching top selling products:', error);
+      }
+    };
+
+    fetchTopSellingProducts();
+  }, []);
+
   // Fetch products by category
   useEffect(() => {
     if (selectedCategory) {
@@ -123,15 +137,6 @@ function CustomerHome() {
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
-
-  // Fetch top selling products
-  useEffect(() => {
-    if (showTopSelling) {
-      axios.get('http://localhost:5000/api/products/top-selling')
-        .then(res => setTopSellingProducts(res.data))
-        .catch(err => console.error('Failed to fetch top selling products', err));
-    }
-  }, [showTopSelling]);
 
   const handleAddToCart = async (productId) => {
     try {
@@ -201,7 +206,41 @@ function CustomerHome() {
     navigate('/cart');
   };
 
-  const displayedProducts = searchTerm ? searchResults : products;
+  const handleCategoryClick = (category) => {
+    setSelectedCategory(category);
+    setSearchTerm('');
+    setSearchResults([]);
+    setActiveTab('categories');
+  };
+
+  const handleTopSellingClick = () => {
+    setActiveTab('top-selling');
+    setSelectedCategory('');
+    setSearchTerm('');
+    setSearchResults([]);
+  };
+
+  const getDisplayedProducts = () => {
+    if (searchTerm) {
+      return searchResults;
+    }
+    if (activeTab === 'top-selling') {
+      return topSellingProducts;
+    }
+    return products;
+  };
+
+  const getMainTitle = () => {
+    if (searchTerm) {
+      return `Search Results for "${searchTerm}"`;
+    }
+    if (activeTab === 'top-selling') {
+      return 'Top Selling Products 🔥';
+    }
+    return selectedCategory || 'Select a Category';
+  };
+
+  const displayedProducts = getDisplayedProducts();
 
   return (
     <div className="homepage">
@@ -242,65 +281,119 @@ function CustomerHome() {
       </header>
       <div className="main-area">
         <aside className="sidebar">
-          <h2>Categories</h2>
-          <ul>
-            {categories.map((category) => (
-              <li
-                key={category}
-                onClick={() => {
-                  setSelectedCategory(category);
-                  setSearchTerm('');
-                  setSearchResults([]);
-                }}
-              >
-                {category}
-              </li>
-            ))}
-            <li
-              className={showTopSelling ? 'active top-selling' : 'top-selling'}
-              onClick={() => setShowTopSelling(true)}
+          <div className="sidebar-tabs">
+            <button 
+              className={`tab-btn ${activeTab === 'top-selling' ? 'active' : ''}`}
+              onClick={handleTopSellingClick}
             >
               🔥 Top Selling
-            </li>
-          </ul>
-        </aside>
-        <main className="main-content">
-          <h2>{searchTerm ? `Search Results for "${searchTerm}"` : selectedCategory || 'Select a Category'}</h2>
-          <div className="product-grid">
-            {showTopSelling
-              ? topSellingProducts.map(product => (
-                  <div key={product.product_id} className="product-card">
-                    <img src={product.image_url || 'default-image.jpg'} alt={product.name} />
-                    <h3>{product.name}</h3>
-                    <p>৳{product.price}</p>
-                    <p className="sales-count">🔥 Sold: {product.total_sold}</p>
-                  </div>
-                ))
-              : displayedProducts.map((product) => (
-                  <div key={product.product_id || product.id} className="product-card">
-                    <img
-                      src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
-                      alt={product.name || product.title || 'No Title'}
-                    />
-                    <h3>{product.name || product.title || 'No Title'}</h3>
-                    <p>৳{product.price || 'N/A'}</p>
-
-                    <button 
-                      onClick={() => handleAddToCart(product.product_id || product.id)}
-                      style={{ backgroundColor: 'green', color: 'white', margin: '5px' }}
-                    >
-                      Add to Cart
-                    </button>
-
-                    <button
-                      onClick={() => handleAddToWishlist(product.product_id || product.id)}
-                      style={{ backgroundColor: 'red', color: 'white', margin: '5px' }}
-                    >
-                      ❤️ Wishlist
-                    </button>
-                  </div>
-                ))}
+            </button>
+            <button 
+              className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
+              onClick={() => setActiveTab('categories')}
+            >
+              📂 Categories
+            </button>
           </div>
+          
+          {activeTab === 'categories' && (
+            <div className="categories-section">
+              <h2>Categories</h2>
+              <ul>
+                {categories.map((category) => (
+                  <li
+                    key={category}
+                    className={selectedCategory === category ? 'active' : ''}
+                    onClick={() => handleCategoryClick(category)}
+                  >
+                    {category}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          
+          {activeTab === 'top-selling' && (
+            <div className="top-selling-info">
+              <h2>Top Selling Products</h2>
+              <p>Discover our most popular items based on customer purchases!</p>
+              <div className="stats">
+                <div className="stat-item">
+                  <span className="stat-number">{topSellingProducts.length}</span>
+                  <span className="stat-label">Hot Items</span>
+                </div>
+              </div>
+            </div>
+          )}
+        </aside>
+        
+        <main className="main-content">
+          <h2>{getMainTitle()}</h2>
+          <div className="product-grid">
+            {displayedProducts.map((product) => (
+              <div key={product.product_id || product.id} className="product-card">
+                {activeTab === 'top-selling' && (
+                  <div className="top-selling-badge">
+                    <span className="fire-icon">🔥</span>
+                    <span className="sold-count">{product.total_times_purchased} sold</span>
+                  </div>
+                )}
+                
+                <img
+                  src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
+                  alt={product.name || product.title || 'No Title'}
+                />
+                
+                <div className="product-info">
+                  <h3>{product.name || product.title || 'No Title'}</h3>
+                  <p className="price">৳{product.price || 'N/A'}</p>
+                  
+                  {activeTab === 'top-selling' && (
+                    <div className="selling-stats">
+                      <small>
+                        {product.total_customers} customers • 
+                        ৳{Math.round(product.total_revenue || 0)} revenue
+                      </small>
+                    </div>
+                  )}
+                  
+                  {product.discount_percentage && (
+                    <div className="discount-badge">
+                      -{product.discount_percentage}% OFF
+                    </div>
+                  )}
+                </div>
+
+                <div className="product-actions">
+                  <button 
+                    onClick={() => handleAddToCart(product.product_id || product.id)}
+                    className="add-to-cart-btn"
+                  >
+                    Add to Cart
+                  </button>
+
+                  <button
+                    onClick={() => handleAddToWishlist(product.product_id || product.id)}
+                    className="wishlist-btn"
+                  >
+                    ❤️
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          {displayedProducts.length === 0 && (
+            <div className="no-products">
+              <p>
+                {searchTerm 
+                  ? 'No products found matching your search.' 
+                  : activeTab === 'top-selling' 
+                    ? 'No top selling products available yet.' 
+                    : 'No products available in this category.'}
+              </p>
+            </div>
+          )}
         </main>
       </div>
       <footer className="footer">
