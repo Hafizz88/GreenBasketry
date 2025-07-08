@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 
+
 function Signup() {
   const [formData, setFormData] = useState({
     name: '',
@@ -16,6 +17,7 @@ function Signup() {
   const [thanas, setThanas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const navigate = useNavigate();
   
   useEffect(() => {
     // Fetch thanas on mount
@@ -96,6 +98,15 @@ function Signup() {
       if (res.ok) {
         alert(data.message);
         // Note: localStorage not available in this demo
+        
+        localStorage.setItem('userId', JSON.stringify(data.userId));
+        console.log('User ID saved to localStorage:', data.userId);
+        localStorage.setItem('role', role); 
+        console.log('Role saved to localStorage:', role);
+        
+
+        navigate('/home');
+
         console.log('Would navigate to /product');
       } else {
         alert(data.error);
