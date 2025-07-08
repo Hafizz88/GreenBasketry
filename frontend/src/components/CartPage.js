@@ -70,27 +70,30 @@ function CartPage() {
   if (loading) return <div>Loading...</div>;
   if (!cart) return <div>No active cart found.</div>;
 
-return (
-  <div className="cart-container">
-    <h2>Your Cart</h2>
-    <ul className="cart-list">
-      {cartItems.map(item => (
-        <li key={item.cart_item_id} className="cart-item">
-          <img src={item.image_url} alt={item.name} />
-          <span>{item.name}</span>
-          <span>Qty: {item.quantity}</span>
-          <span>৳{item.price}</span>
-          <button onClick={() => handleUpdateCartItem(item.product_id, item.quantity + 1)}>+ Qty</button>
-          <button onClick={() => handleRemoveFromCart(item.product_id)}>Remove</button>
-        </li>
-      ))}
-    </ul>
-    <div className="cart-total">
-      Total: ৳{cart.price}
+  return (
+    <div className="cart-container">
+      <h2>Your Cart</h2>
+      <ul className="cart-list">
+        {cartItems.map(item => (
+          <li key={item.cart_item_id} className="cart-item">
+            <img src={item.image_url} alt={item.name} />
+            <span>{item.name}</span>
+            <span>Qty: {item.quantity}</span>
+            <span>৳{item.price}</span>
+            <button onClick={() => handleUpdateCartItem(item.product_id, item.quantity + 1)}>+ Qty</button>
+            <button onClick={() => handleRemoveFromCart(item.product_id)}>Remove</button>
+          </li>
+        ))}
+      </ul>
+      <div className="cart-total">
+        Total: ৳{cart.price}
+      </div>
+      <button className="checkout-btn" onClick={() => navigate('/voucher-summary')}>
+        Next
+      </button>
     </div>
-    <button className="checkout-btn">Checkout</button>
-  </div>
-);
+  );
 }
 
 export default CartPage;
+

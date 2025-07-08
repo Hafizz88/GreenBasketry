@@ -11,8 +11,10 @@ import AdminDashboard from './components/AdminDashboard';
 import ManageProducts from './components/ManageProducts';
 import AddProduct from './components/AddProduct';
 import ManageCoupons from './components/ManageCoupons';
-import SetDiscount from './components/SetDiscount';          
-import RiderHome from './components/RiderHome';
+import SetDiscount from './components/SetDiscount'; 
+import RiderHome from './components/RiderHome.js';  
+import VoucherSummary from './components/VoucherPage.js';       
+
 
 
 function App() {
@@ -24,6 +26,7 @@ function App() {
         <Route path="/home" element={<CustomerHome />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<CustomerProfile />} />
+        <Route path="/voucher-summary" element={<VoucherSummary />} />
         {/* Add other routes as needed */}
         <Route path="/product" element={<Product />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />}>
