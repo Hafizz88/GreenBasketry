@@ -7,7 +7,9 @@ const RiderHome = () => {
 
   useEffect(() => {
     const user = JSON.parse(localStorage.getItem('user'));
-    if (!user || user.role !== 'rider') {
+    const role = localStorage.getItem('role');
+    
+    if (!user || role !== 'rider') {
       navigate('/');  // If user is not a rider, redirect to login
     } else {
       setRider(user);  // Set rider details if the user is a rider
@@ -20,7 +22,7 @@ const RiderHome = () => {
     <div>
       <h2>Welcome, {rider.name}!</h2>
       <p>Vehicle: {rider.vehicle_info}</p>
-      <p>Status: {rider.available ? 'Available' : 'Unavailable'}</p>
+      <p>Status: {rider.available !== undefined ? (rider.available ? 'Available' : 'Unavailable') : 'Status not set'}</p>
     </div>
   );
 };

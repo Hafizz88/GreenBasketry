@@ -31,16 +31,22 @@ function Login() {
     if (res.ok) {
       alert(data.message);
 
-      // Save to localStorage after successful login
+      // Save complete user object to localStorage
+      const userObject = {
+        ...data.user,
+        role: role
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userObject));
       localStorage.setItem('role', role);
-      localStorage.setItem('userId', data.user[`${role}_id`]); // Ensure userId is correct here
+      localStorage.setItem('userId', data.user[`${role}_id`]);
 
       if (role === 'admin') {
-        navigate('/admin/dashboard');  // Redirect to admin dashboard
+        navigate('/admin/dashboard');
       } else if (role === 'rider') {
-        navigate('/rider/home');  // Redirect to rider home
+        navigate('/rider/home');
       } else {
-        navigate('/home');  // Redirect to customer home
+        navigate('/home');
       }
     } else {
       alert(data.error);
@@ -50,8 +56,6 @@ function Login() {
     console.error(err);
   }
 };
-
-
 
   return (
     <div className="container">
