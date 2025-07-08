@@ -51,5 +51,25 @@ const SearchProductByname = async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 };
+export const getTopSellingProducts = async (req, res) => {
+  try {
+    const result = await client.query(
+      `SELECT 
+         p.product_id, 
+         p.name, 
+         p.price, 
+         p.image_url, 
+         COALESCE(SUM(bh.times_purchased), 0) AS total_sold
+       FROM products p
+       LEFT JOIN buy_history bh ON p.product_id = bh.product_id
+       GROUP BY p.product_id, p.name, p.price, p.image_url
+       ORDER BY total_sold DESC
+       LIMIT 12;`
+    );
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch top selling products' });
+  }
+};
 
 export { getAllProducts, getAllCategories, getProductsByCategory, SearchProductByname };

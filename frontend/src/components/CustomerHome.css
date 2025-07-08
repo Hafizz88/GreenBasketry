@@ -58,6 +58,26 @@
   color: #fff;
 }
 
+/* Sidebar Top Selling item */
+.sidebar .top-selling {
+  background: linear-gradient(90deg, #ff9800 0%, #ff5722 100%);
+  color: #fff;
+  font-weight: bold;
+  border-radius: 8px;
+  padding: 8px 16px;
+  margin-top: 10px;
+  cursor: pointer;
+  transition: background 0.3s, box-shadow 0.3s;
+  box-shadow: 0 2px 8px rgba(255, 152, 0, 0.08);
+}
+
+.sidebar .top-selling:hover,
+.sidebar .top-selling.active {
+  background: linear-gradient(90deg, #ff5722 0%, #ff9800 100%);
+  box-shadow: 0 4px 16px rgba(255, 87, 34, 0.15);
+  color: #fff;
+}
+
 /* Main content styles */
 .main-content {
   flex: 1;
@@ -104,6 +124,18 @@
 
 .product-card button:hover {
   background-color: #e9ecef;
+}
+
+/* Product card sales count for top selling */
+.product-card .sales-count {
+  color: #ff5722;
+  font-weight: bold;
+  margin-top: 6px;
+  font-size: 1.1em;
+  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .footer {
