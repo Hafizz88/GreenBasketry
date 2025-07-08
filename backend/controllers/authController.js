@@ -24,8 +24,12 @@ const login = async (req, res) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    const userId = user[`${role}_id`];
-    res.status(200).json({ message: 'Login successful', userId, role });
+    // Return the complete user object
+    res.status(200).json({ 
+      message: 'Login successful', 
+      user: user,  // Add this line
+      role 
+    });
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });

@@ -8,55 +8,55 @@ function Login() {
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
 
- const handleLogin = async () => {
-  try {
-    let url = '';
-    let body;
-
-    if (role === 'admin') {
-      url = 'http://localhost:5000/api/auth/admin/login';
-      body = { email, password };
-    } else {
-      url = 'http://localhost:5000/api/auth/login';
-      body = { email, password, role };
-    }
-
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.json();
-
-    if (res.ok) {
-      alert(data.message);
-
-      // Save complete user object to localStorage
-      const userObject = {
-        ...data.user,
-        role: role
-      };
-      
-      localStorage.setItem('user', JSON.stringify(userObject));
-      localStorage.setItem('role', role);
-      localStorage.setItem('userId', data.user[`${role}_id`]);
+  const handleLogin = async () => {
+    try {
+      let url = '';
+      let body;
 
       if (role === 'admin') {
-        navigate('/admin/dashboard');
-      } else if (role === 'rider') {
-        navigate('/rider/home');
+        url = 'http://localhost:5000/api/auth/admin/login';
+        body = { email, password };
       } else {
-        navigate('/home');
+        url = 'http://localhost:5000/api/auth/login';
+        body = { email, password, role };
       }
-    } else {
-      alert(data.error);
+
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+
+      const data = await res.json();
+
+      if (res.ok) {
+        alert(data.message);
+
+        // Create user object with available data
+        const userObject = {
+          email: email,
+          role: role
+        };
+        
+        localStorage.setItem('user', JSON.stringify(userObject));
+        localStorage.setItem('role', role);
+        localStorage.setItem('userId', data.userId); // Use data.userId instead
+
+        if (role === 'admin') {
+          navigate('/admin/dashboard');
+        } else if (role === 'rider') {
+          navigate('/rider/home');
+        } else {
+          navigate('/home');
+        }
+      } else {
+        alert(data.error);
+      }
+    } catch (err) {
+      alert('Login failed. Server might be down.');
+      console.error(err);
     }
-  } catch (err) {
-    alert('Login failed. Server might be down.');
-    console.error(err);
-  }
-};
+  }; // ← Make sure this closing brace is here
 
   return (
     <div className="container">
