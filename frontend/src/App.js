@@ -14,6 +14,8 @@ import ManageCoupons from './components/ManageCoupons';
 import SetDiscount from './components/SetDiscount'; 
 import RiderHome from './components/RiderHome.js';  
 import VoucherSummary from './components/VoucherPage.js';       
+//import OrderConfirmation from './components/OrderConfirmation.js'; // Import the new component
+import OrderSuccess from './components/OrderSuccess';
 
 
 
@@ -27,6 +29,8 @@ function App() {
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<CustomerProfile />} />
         <Route path="/voucher-summary" element={<VoucherSummary />} />
+        / {/* Add the new route here */}
+        <Route path="/order-success" element={<OrderSuccess />} />
         {/* Add other routes as needed */}
         <Route path="/product" element={<Product />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />}>

@@ -11,6 +11,7 @@ import adminRoutes from './routes/adminRoutes.js';
 import customerRoutes from './routes/customerRoutes.js'; // include .js extension
 import ThanaRoutes from './routes/ThanaRoutes.js'; // include .js extension
 import voucherRoutes from './routes/voucherRoutes.js'; // include .js extension
+import orderRoutes from './routes/orderRoutes.js';
 
 dotenv.config();
 
@@ -28,6 +29,7 @@ app.use('/api/wishlist', wishlistRoutes); // Add wishlist routes
 app.use('/api/customers', customerRoutes); // Add customer routes
 app.use('/api/thanas', ThanaRoutes); // Add Thana routes
 app.use('/api/vouchers', voucherRoutes); // Add voucher routes
+app.use('/api/orders', orderRoutes);
 
 (async () => {
   try {
