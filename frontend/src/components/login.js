@@ -7,47 +7,55 @@ function Login() {
   const [role, setRole] = useState('customer');
   const navigate = useNavigate();
 
-  const handleLogin = async () => {
-    try {
-      let url = '';
-      let body;
+ const handleLogin = async () => {
+  try {
+    let url = '';
+    let body;
+
+    if (role === 'admin') {
+      url = 'http://localhost:5000/api/auth/admin/login';
+      body = { email, password };
+    } else {
+      url = 'http://localhost:5000/api/auth/login';
+      body = { email, password, role };
+    }
+
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message);
+
+      // Save complete user object to localStorage
+      const userObject = {
+        ...data.user,
+        role: role
+      };
+      
+      localStorage.setItem('user', JSON.stringify(userObject));
+      localStorage.setItem('role', role);
+      localStorage.setItem('userId', data.user[`${role}_id`]);
 
       if (role === 'admin') {
-        url = 'http://localhost:5000/api/auth/admin/login';
-        body = { email, password };
+        navigate('/admin/dashboard');
+      } else if (role === 'rider') {
+        navigate('/rider/home');
       } else {
-        url = 'http://localhost:5000/api/auth/login';
-        body = { email, password, role };
+        navigate('/home');
       }
-
-      const res = await fetch(url, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const data = await res.json();
-
-      if (res.ok) {
-        alert(data.message);
-
-        if (role === 'admin') {
-          localStorage.setItem('userId', data.admin.admin_id);
-          localStorage.setItem('role', 'admin');
-          navigate('/admin/dashboard'); // or your admin home page
-        } else {
-          localStorage.setItem('userId', data.user[`${role}_id`]);
-          localStorage.setItem('role', role);
-          navigate('/home');
-        }
-      } else {
-        alert(data.error);
-      }
-    } catch (err) {
-      alert('Login failed. Server might be down.');
-      console.error(err);
+    } else {
+      alert(data.error);
     }
-  };
+  } catch (err) {
+    alert('Login failed. Server might be down.');
+    console.error(err);
+  }
+};
 
   return (
     <div className="container">

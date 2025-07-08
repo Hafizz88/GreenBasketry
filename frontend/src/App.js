@@ -1,15 +1,9 @@
-import React from 'react';
+import React from 'react'; 
 import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
 
-import Login from './components/login.js' ;
-
+import Login from './components/login.js';
 import Signup from './components/Signup.js';
 import CustomerHome from './components/CustomerHome.js';
-import './App.css';
-
-//import Login from './components/login.js';
-//import Signup from './components/Signup.js';
-//import './App.css';
 import Product from './components/Product.js';
 import CartPage from './components/CartPage.js';
 import CustomerProfile from './components/CustomerProfile.js';
@@ -17,8 +11,7 @@ import AdminDashboard from './components/AdminDashboard';
 import ManageProducts from './components/ManageProducts';
 import AddProduct from './components/AddProduct';
 import ManageCoupons from './components/ManageCoupons';
-import SetDiscount from './components/SetDiscount'; 
-import VoucherSummary from './components/VoucherPage.js';         
+import SetDiscount from './components/SetDiscount';          
 
 
 function App() {
@@ -27,11 +20,9 @@ function App() {
       <Routes>
         <Route path="/" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-
         <Route path="/home" element={<CustomerHome />} />
         <Route path="/cart" element={<CartPage />} />
         <Route path="/profile" element={<CustomerProfile />} />
-        <Route path="voucher-summary" element={<VoucherSummary />} />
         {/* Add other routes as needed */}
         <Route path="/product" element={<Product />} />
         <Route path="/admin/dashboard" element={<AdminDashboard />}>
@@ -40,6 +31,7 @@ function App() {
           <Route path="coupons" element={<ManageCoupons />} />
           <Route path="set-discount" element={<SetDiscount />} />
         </Route>
+        <Route path="/rider/home" element={<RiderHome />} />
       </Routes>
     </Router>
   );
