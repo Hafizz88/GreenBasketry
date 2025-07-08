@@ -1,0 +1,34 @@
+.voucher-summary {
+  max-width: 600px;
+  margin: auto;
+  padding: 2rem;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  background: #f9f9f9;
+}
+
+.summary-grid p {
+  margin: 0.5rem 0;
+}
+
+.action-buttons {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 1.5rem;
+}
+
+button {
+  padding: 0.5rem 1.2rem;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.back-button {
+  background-color: #ddd;
+}
+
+.proceed-button {
+  background-color: #4caf50;
+  color: white;
+}

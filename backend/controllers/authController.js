@@ -74,15 +74,29 @@ const signup = async (req, res) => {
       );
       //localStorage.setItem('userID', userID.rows[0].admin_id);
     } else if (role === 'customer') {
-      console.log('📥 Inserting customer...');
-      await client.query(
-        `INSERT INTO customers(name, email, password_hash, phone, points_earned, points_used) VALUES($1, $2, $3, $4, 0, 0)`,
-        [name, email, hash, phone]
-      );
-      userID = await client.query(
-        `SELECT customer_id FROM customers WHERE email = $1`,
-        [email]
-      );
+      const { thana_name, address_line, postal_code, is_default } = req.body;
+
+  if (!thana_name || !address_line) {
+    return res.status(400).json({ error: 'Missing address or thana name' });
+  }
+
+  console.log('📥 Inserting customer with address using procedure...');
+
+  await client.query(
+    `CALL register_customer_with_address($1, $2, $3, $4, $5, $6, $7, $8)`,
+    [
+      name,
+      email,
+      hash,
+      phone,
+      thana_name,
+      address_line,
+      postal_code ?? null,
+      is_default ?? false
+    ]
+  );
+
+  res.status(201).json({ message: `Customer registered successfully` });
       localStorage.setItem('userID', userID.rows[0].customer_id);
     } else if (role === 'rider') {
       if (!vehicle_info) {
