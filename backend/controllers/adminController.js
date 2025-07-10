@@ -5,7 +5,7 @@ export const addProduct = async (req, res) => {
   const { name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
   try {
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage)
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percantage)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [name, category, price, stock, description, image_url, discount_percentage, vat_percentage]
     );
