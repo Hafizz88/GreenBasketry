@@ -31,16 +31,24 @@ function Login() {
 
       if (res.ok) {
         alert(data.message);
+        let userId;
+  if (role === 'admin') {
+    userId = data.user?.admin_id;
+  } else if (role === 'rider') {
+    userId = data.user?.rider_id;
+  } else {
+    userId = data.user?.customer_id;
+  }
 
         // Create user object with available data
         const userObject = {
           email: email,
           role: role
         };
-        
+        localStorage.setItem('token', data.token); // Store the token
         localStorage.setItem('user', JSON.stringify(userObject));
         localStorage.setItem('role', role);
-        localStorage.setItem('userId', data.userId); // Use data.userId instead
+        localStorage.setItem('userId', userId); // Use data.userId instead
 
         if (role === 'admin') {
           navigate('/admin/dashboard');

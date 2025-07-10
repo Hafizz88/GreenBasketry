@@ -20,7 +20,7 @@ async function getOrCreateActiveCart(customerId) {
 
 // GET /api/cart?customer_id=1
 export const getCart = async (req, res) => {
-  const { customer_id } = req.query;
+  const customer_id = req.user.id; // Fixed: removed destructuring
   try {
     console.log('📥 Fetching cart for customer:', customer_id);
     const cart = await getOrCreateActiveCart(customer_id);
@@ -57,7 +57,11 @@ export const getCart = async (req, res) => {
 // POST /api/cart
 export const addToCart = async (req, res) => {
   console.log('Add to cart called:', req.body);
-  const { customer_id, product_id, quantity } = req.body;
+  const customer_id = req.user.id; // Already correct
+  if (!customer_id) {
+    return res.status(400).json({ error: 'Customer ID is required' });
+  }
+  const { product_id, quantity } = req.body;
   try {
     const cart = await getOrCreateActiveCart(customer_id);
 
@@ -108,7 +112,11 @@ export const addToCart = async (req, res) => {
 
 // DELETE /api/cart
 export const removeFromCart = async (req, res) => {
-  const { customer_id, product_id } = req.body;
+  const customer_id = req.user.id; // Already correct
+  if (!customer_id) { 
+    return res.status(400).json({ error: 'Customer ID is required' });
+  }
+  const { product_id } = req.body;
   try {
     const cart = await getOrCreateActiveCart(customer_id);
     await client.query(
@@ -141,7 +149,11 @@ export const removeFromCart = async (req, res) => {
 
 // PUT /api/cart
 export const updateCartItem = async (req, res) => {
-  const { customer_id, product_id, quantity } = req.body;
+  const customer_id = req.user.id; // Already correct
+  if (!customer_id) {
+    return res.status(400).json({ error: 'Customer ID is required' });
+  }
+  const { product_id, quantity } = req.body;
   try {
     const cart = await getOrCreateActiveCart(customer_id);
     const result = await client.query(
@@ -174,4 +186,3 @@ export const updateCartItem = async (req, res) => {
     res.status(500).json({ error: 'Server error' });
   }
 };
-

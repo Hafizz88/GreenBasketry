@@ -1,4 +1,5 @@
 import { client } from '../db.js';
+import jwt from 'jsonwebtoken';
 
 const adminLogin = async (req, res) => {
   const { email, password } = req.body;
@@ -28,7 +29,12 @@ const adminLogin = async (req, res) => {
     }
 
     // Admin is successfully authenticated
-    res.status(200).json({ message: 'Admin login successful', admin });
+    const token = jwt.sign(
+      { id: admin.id, role: 'admin', email: admin.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1d' }
+    );
+    res.status(200).json({ message: 'Admin login successful', token,admin });
   } catch (err) {
     console.error('❌ Admin Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });

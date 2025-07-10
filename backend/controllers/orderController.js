@@ -96,10 +96,6 @@ export const createOrder = async (req, res) => {
       }
 
       // Update product stock
-      await client.query(
-        `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
-        [item.quantity, item.product_id]
-      );
     }
 
     // 6. Create delivery record

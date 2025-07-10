@@ -98,16 +98,31 @@ function Signup() {
       if (res.ok) {
         alert(data.message);
         // Note: localStorage not available in this demo
-        
-        localStorage.setItem('userId', JSON.stringify(data.userId));
-        console.log('User ID saved to localStorage:', data.userId);
-        localStorage.setItem('role', role); 
+        let userId;
+  if (role === 'admin') {
+    userId = data.user?.admin_id;
+  } else if (role === 'rider') {
+    userId = data.user?.rider_id;
+  } else {
+    userId = data.user?.customer_id;
+  }
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', JSON.stringify(userId));
+        console.log('User ID saved to localStorage:', userId);
+        localStorage.setItem('role', role);
         console.log('Role saved to localStorage:', role);
+        if(role=='rider'){
+          navigate('/rider/home');
+          console.log('Would navigate to /rider/home');
+        } else {
+          navigate('/home');
+          console.log('Would navigate to /home');
+        }
         
 
-        navigate('/home');
+        //navigate('/home');
 
-        console.log('Would navigate to /product');
+        console.log('Would navigate to /home');
       } else {
         alert(data.error);
       }
@@ -154,7 +169,6 @@ function Signup() {
         value={formData.role} 
         onChange={handleChange}
       >
-        <option value="admin">Admin</option>
         <option value="customer">Customer</option>
         <option value="rider">Rider</option>
       </select>
