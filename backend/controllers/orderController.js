@@ -96,10 +96,6 @@ export const createOrder = async (req, res) => {
       }
 
       // Update product stock
-      await client.query(
-        `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
-        [item.quantity, item.product_id]
-      );
     }
 
     // 6. Create delivery record
@@ -112,41 +108,15 @@ export const createOrder = async (req, res) => {
 
     const delivery = deliveryResult.rows[0];
 
-    // 7. Assign to an available rider (simple assignment - first available rider)
-    const riderResult = await client.query(
-      `SELECT rider_id FROM riders WHERE available = true LIMIT 1`
-    );
-
-    if (riderResult.rows.length > 0) {
-      const riderId = riderResult.rows[0].rider_id;
-      
-      // Create delivery assignment
-      await client.query(
-        `INSERT INTO delivery_assignments (delivery_id, rider_id)
-         VALUES ($1, $2)`,
-        [delivery.delivery_id, riderId]
-      );
-
-      // Create notification for rider
-      await client.query(
-        `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read)
-         VALUES ($1, $2, $3, false)`,
-        [delivery.delivery_id, riderId, `New delivery assigned: Order #${order.order_id}`]
-      );
-    }
-
+    // 7. (Removed auto-assignment to rider)
     // 8. Clear the cart by setting it to inactive
-    await client.query(
-      `UPDATE carts SET is_active = false WHERE cart_id = $1`,
-      [cart_id]
-    );
-
     await client.query('COMMIT');
 
     res.status(201).json({
       success: true,
       order_id: order.order_id,
       delivery_id: delivery.delivery_id,
+      total_amount: order.total_amount,
       message: 'Order placed successfully'
     });
 
@@ -515,35 +485,8 @@ export const placeOrder = async (req, res) => {
 
     const delivery_id = deliveryResult.rows[0].delivery_id;
 
-    // 15. Assign to an available rider
-    const riderResult = await client.query(
-      `SELECT rider_id FROM riders WHERE available = true LIMIT 1`
-    );
-
-    if (riderResult.rows.length > 0) {
-      const rider_id = riderResult.rows[0].rider_id;
-      
-      // Create delivery assignment
-      await client.query(
-        `INSERT INTO delivery_assignments (delivery_id, rider_id)
-         VALUES ($1, $2)`,
-        [delivery_id, rider_id]
-      );
-
-      // Create notification for rider
-      await client.query(
-        `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read)
-         VALUES ($1, $2, $3, false)`,
-        [delivery_id, rider_id, `New delivery assigned: Order #${order_id}`]
-      );
-    }
-
+    // 15. (Removed auto-assignment to rider)
     // 16. Clear the cart by setting it to inactive
-    await client.query(
-      `UPDATE carts SET is_active = false WHERE cart_id = $1`,
-      [cart_id]
-    );
-
     await client.query('COMMIT');
 
     res.status(201).json({

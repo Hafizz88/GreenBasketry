@@ -7,17 +7,37 @@ function CartPage() {
   const [cart, setCart] = useState(null);
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // ✅ Hook must be here
+  const navigate = useNavigate();
+
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    return {
+      headers: {
+        Authorization: token ? `Bearer ${token}` : ''
+      }
+    };
+  };
 
   const customerId = localStorage.getItem('userId');
 
   const fetchCart = async () => {
     try {
-      const res = await axios.get(`http://localhost:5000/api/cart?customer_id=${customerId}`);
-      setCart(res.data.cart);
-      setCartItems(res.data.items);
+      const response = await axios.get(`http://localhost:5000/api/cart`, {
+        ...getAuthHeader(),
+        params: { customer_id: customerId }
+      });
+
+      console.log('Cart response:', response.data);
+
+      if (response.data.cart) {
+        setCart(response.data.cart);
+        setCartItems(response.data.items);
+      } else {
+        setCart(null);
+        setCartItems([]);
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching cart:', err);
     } finally {
       setLoading(false);
     }
@@ -29,41 +49,53 @@ function CartPage() {
 
   const handleAddToCart = async (productId) => {
     try {
-      await axios.post(`http://localhost:5000/api/cart`, {
-        customer_id: customerId,
-        product_id: productId,
-        quantity: 1
-      });
+      await axios.post(
+        `http://localhost:5000/api/cart`,
+        {
+          customer_id: customerId,
+          product_id: productId,
+          quantity: 1
+        },
+        getAuthHeader()
+      );
       alert('Added to cart!');
       fetchCart();
     } catch (err) {
-      console.error(err);
+      console.error('Add to cart failed:', err);
     }
   };
 
   const handleRemoveFromCart = async (productId) => {
     try {
       await axios.delete(`http://localhost:5000/api/cart`, {
-        data: { customer_id: customerId, product_id: productId }
+        ...getAuthHeader(),
+        data: {
+          customer_id: customerId,
+          product_id: productId
+        }
       });
       alert('Removed from cart!');
       fetchCart();
     } catch (err) {
-      console.error(err);
+      console.error('Remove from cart failed:', err);
     }
   };
 
   const handleUpdateCartItem = async (productId, newQuantity) => {
     try {
-      await axios.put(`http://localhost:5000/api/cart`, {
-        customer_id: customerId,
-        product_id: productId,
-        quantity: newQuantity
-      });
+      await axios.put(
+        `http://localhost:5000/api/cart`,
+        {
+          customer_id: customerId,
+          product_id: productId,
+          quantity: newQuantity
+        },
+        getAuthHeader()
+      );
       alert('Updated cart item quantity!');
       fetchCart();
     } catch (err) {
-      console.error(err);
+      console.error('Update quantity failed:', err);
     }
   };
 
@@ -74,7 +106,7 @@ function CartPage() {
     <div className="cart-container">
       <h2>Your Cart</h2>
       <ul className="cart-list">
-        {cartItems.map(item => (
+        {cartItems.map((item) => (
           <li key={item.cart_item_id} className="cart-item">
             <img src={item.image_url} alt={item.name} />
             <span>{item.name}</span>
@@ -85,9 +117,7 @@ function CartPage() {
           </li>
         ))}
       </ul>
-      <div className="cart-total">
-        Total: ৳{cart.price}
-      </div>
+      <div className="cart-total">Total: ৳{cart.price}</div>
       <button className="checkout-btn" onClick={() => navigate('/voucher-summary')}>
         Next
       </button>
@@ -96,4 +126,5 @@ function CartPage() {
 }
 
 export default CartPage;
+
 

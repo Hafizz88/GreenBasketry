@@ -31,22 +31,25 @@ function Login() {
 
       if (res.ok) {
         alert(data.message);
+        let userId;
+  if (role === 'admin') {
+    userId = data.user?.admin_id;
+  } else if (role === 'rider') {
+    userId = data.user?.rider_id;
+  } else {
+    userId = data.user?.customer_id;
+  }
 
         // Create user object with available data
         const userObject = {
           email: email,
           role: role
         };
-        
+        localStorage.setItem('token', data.token); // Store the token
         localStorage.setItem('user', JSON.stringify(userObject));
         localStorage.setItem('role', role);
-        
-        // Fix: Handle both userId and user object
-        const userId = data.userId || data.user[`${role}_id`];
-        localStorage.setItem('userId', userId);
-        
-        console.log('User ID saved:', userId);
-        
+        localStorage.setItem('userId', data.userId); // Use data.userId instead
+
         if (role === 'admin') {
           navigate('/admin/dashboard');
         } else if (role === 'rider') {

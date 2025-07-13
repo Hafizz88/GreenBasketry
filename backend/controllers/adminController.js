@@ -5,7 +5,7 @@ export const addProduct = async (req, res) => {
   const { name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
   try {
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage)
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percantage)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
       [name, category, price, stock, description, image_url, discount_percentage, vat_percentage]
     );
@@ -105,14 +105,27 @@ export const deleteCoupon = async (req, res) => {
 
 // Update a coupon
 export const updateCoupon = async (req, res) => {
-  const { coupon_id, code, description, discount_percent, valid_from, valid_to, is_active } = req.body;
+  const coupon_id = req.params.id;
+  const { code, description, discount_percent, valid_from, valid_to, is_active } = req.body;
+  
+  console.log('Updating coupon ID:', coupon_id);
+  console.log('Request body:', req.body);
+  
   try {
     const result = await client.query(
       `UPDATE coupons SET code=$1, description=$2, discount_percent=$3, valid_from=$4, valid_to=$5, is_active=$6 WHERE coupon_id=$7 RETURNING *`,
       [code, description, discount_percent, valid_from, valid_to, is_active, coupon_id]
     );
+    
+    console.log('Update result:', result.rows);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coupon not found' });
+    }
+    
     res.json(result.rows[0]);
   } catch (err) {
+    console.error('Error updating coupon:', err);
     res.status(500).json({ error: 'Failed to update coupon' });
   }
 };

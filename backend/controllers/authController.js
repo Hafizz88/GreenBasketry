@@ -1,6 +1,7 @@
 import { client } from '../db.js';
 import { hashPassword, comparePassword } from '../utils/hash.js';
 import { validateEmail, validatePassword } from '../utils/validator.js';
+import jwt from 'jsonwebtoken';
 
 const login = async (req, res) => {
   const { email, password, role } = req.body;
@@ -25,13 +26,17 @@ const login = async (req, res) => {
     }
 
     // Return the complete user object
+    const token = jwt.sign(
+      { id: user[`${role}_id`], role, email: user.email },
+      process.env.JWT_SECRET || 'your_jwt_secret',  
+      { expiresIn: '1d' }
+    );  
+    
     res.status(200).json({ 
-  message: 'Login successful', 
-  user: user,
-  userId: user[`${role}_id`], // Add this line - extracts the correct ID
-  role 
-});
-
+      message: 'Login successful', 
+      user: user,  // Add this line
+      role 
+    });
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });
@@ -105,9 +110,11 @@ else if (role === 'customer') {
 
   const { customer_id, address_id } = result.rows[0];
   console.log(`✅ Customer created: ID ${customer_id}, Address ID ${address_id}`);
+  const token = jwt.sign({ id: customer_id, email, role, name }, JWT_SECRET, { expiresIn: '1d' });
 
   return res.status(201).json({
     message: 'Customer registered successfully',
+    token,
     userId: customer_id,
     addressId: address_id
   });
@@ -124,8 +131,9 @@ else if (role === 'rider') {
 
       const result = await client.query(`SELECT rider_id FROM riders WHERE email = $1`, [email]);
       const rider_id = result.rows[0].rider_id;
+      const token = jwt.sign({ id: rider_id, email, role, name }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
 
-      return res.status(201).json({ message: 'Rider registered successfully', userId: rider_id });
+      return res.status(201).json({ message: 'Rider registered successfully', token, userId: rider_id });
     }
 
     return res.status(400).json({ error: 'Invalid role' });

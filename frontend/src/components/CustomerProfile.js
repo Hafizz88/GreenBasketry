@@ -15,6 +15,19 @@ function CustomerProfile() {
     postal_code: ''
   });
 
+  const getAuthHeader = () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      console.error('No token found in localStorage');
+      return null;
+    }
+    return {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    };
+  };
+
   const customerId = localStorage.getItem('userId');
 
   useEffect(() => {
@@ -28,21 +41,37 @@ function CustomerProfile() {
     
     const fetchProfile = async () => {
       try {
+        const authHeader = getAuthHeader();
+        if (!authHeader) {
+          console.error('No auth header available');
+          setLoading(false);
+          return;
+        }
+
+        if (!customerId) {
+          console.error('No customer ID found');
+          setLoading(false);
+          return;
+        }
+
+        console.log('Fetching profile for customer:', customerId);
+        console.log('Auth header:', authHeader);
+
         // Fetch customer data
-        const customerRes = await axios.get(`http://localhost:5000/api/customers/${customerId}`);
+        const customerRes = await axios.get(`http://localhost:5000/api/customers/${customerId}`, authHeader);
         setCustomer(customerRes.data);
 
         // Fetch addresses
-        const addressRes = await axios.get(`http://localhost:5000/api/customers/${customerId}/addresses`);
+        const addressRes = await axios.get(`http://localhost:5000/api/customers/${customerId}/addresses`, authHeader);
         setAddresses(addressRes.data);
 
         // Fetch wishlist
-        const wishlistRes = await axios.get(`http://localhost:5000/api/wishlist?customer_id=${customerId}`);
+        const wishlistRes = await axios.get(`http://localhost:5000/api/wishlist?customer_id=${customerId}`, authHeader);
         setWishlist(wishlistRes.data);
 
         // Fetch thanas with detailed logging
         console.log('Fetching thanas...');
-        const thanasRes = await axios.get('http://localhost:5000/api/thanas');
+        const thanasRes = await axios.get('http://localhost:5000/api/thanas', authHeader);
         console.log('Thanas response:', thanasRes.data);
         
         // Check the structure of the response
@@ -61,6 +90,14 @@ function CustomerProfile() {
         console.error('Error fetching profile data:', err);
         if (err.response) {
           console.error('Error response:', err.response.data);
+          console.error('Error status:', err.response.status);
+          
+          // Handle specific error cases
+          if (err.response.status === 401) {
+            console.error('Unauthorized - token may be invalid or expired');
+            // Optionally redirect to login
+            // window.location.href = '/login';
+          }
         }
       } finally {
         setLoading(false);
@@ -69,6 +106,9 @@ function CustomerProfile() {
     
     if (customerId) {
       fetchProfile();
+    } else {
+      console.error('No customer ID found in localStorage');
+      setLoading(false);
     }
   }, [customerId]);
 
@@ -79,7 +119,14 @@ function CustomerProfile() {
 
   const handleRemoveFromWishlist = async (productId) => {
     try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        alert('Authentication required');
+        return;
+      }
+
       await axios.delete(`http://localhost:5000/api/wishlist`, {
+        ...authHeader,
         data: {
           customer_id: customerId,
           product_id: productId
@@ -88,9 +135,14 @@ function CustomerProfile() {
 
       // Remove the item from UI
       setWishlist(prev => prev.filter(item => item.product_id !== productId));
+      alert('Item removed from wishlist');
     } catch (err) {
       console.error("Failed to remove item from wishlist", err);
-      alert("Failed to remove item");
+      if (err.response && err.response.status === 401) {
+        alert("Authentication failed. Please log in again.");
+      } else {
+        alert("Failed to remove item");
+      }
     }
   };
 
@@ -112,6 +164,12 @@ function CustomerProfile() {
     }
 
     try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        alert('Authentication required');
+        return;
+      }
+
       const { address_line, thana_name, postal_code } = newAddress;
 
       const response = await axios.post(`http://localhost:5000/api/customers/${customerId}/addresses`, {
@@ -120,7 +178,7 @@ function CustomerProfile() {
         thana_name: thana_name.trim(),
         postal_code: postal_code.trim(),
         is_default: true
-      });
+      }, authHeader);
 
       // Add the new address to the list
       setAddresses(prev => [...prev, response.data]);
@@ -136,7 +194,11 @@ function CustomerProfile() {
       alert('Address added successfully!');
     } catch (err) {
       console.error('Failed to add address', err);
-      alert('Failed to add address. Please try again.');
+      if (err.response && err.response.status === 401) {
+        alert('Authentication failed. Please log in again.');
+      } else {
+        alert('Failed to add address. Please try again.');
+      }
     }
   };
 
@@ -181,7 +243,6 @@ function CustomerProfile() {
               {addresses.map(addr => (
                 <li key={addr.address_id} className="address-item">
                   {addr.address_line}, {addr.thana_name}{addr.postal_code ? ` (${addr.postal_code})` : ''}
-
                 </li>
               ))}
             </ul>
@@ -293,4 +354,3 @@ function CustomerProfile() {
 }
 
 export default CustomerProfile;
-

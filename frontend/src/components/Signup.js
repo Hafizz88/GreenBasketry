@@ -97,13 +97,16 @@ function Signup() {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
+        // Note: localStorage not available in this demo
         
         localStorage.setItem('userId', JSON.stringify(data.userId));
         console.log('User ID saved to localStorage:', data.userId);
         localStorage.setItem('role', role); 
         console.log('Role saved to localStorage:', role);
         
+
         navigate('/home');
+
         console.log('Would navigate to /product');
       } else {
         alert(data.error);
@@ -150,15 +153,15 @@ function Signup() {
             onChange={handleChange}
           />
 
-          <select 
-            name="role" 
-            value={formData.role} 
-            onChange={handleChange}
-          >
-            <option value="admin">Admin</option>
-            <option value="customer">Customer</option>
-            <option value="rider">Rider</option>
-          </select>
+      <select 
+        name="role" 
+        value={formData.role} 
+        onChange={handleChange}
+      >
+        <option value="admin">Admin</option>
+        <option value="customer">Customer</option>
+        <option value="rider">Rider</option>
+      </select>
 
           {formData.role === 'rider' && (
             <div className="conditional-fields">
