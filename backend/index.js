@@ -12,6 +12,7 @@ import customerRoutes from './routes/customerRoutes.js'; // include .js extensio
 import ThanaRoutes from './routes/ThanaRoutes.js'; // include .js extension
 import voucherRoutes from './routes/voucherRoutes.js'; // include .js extension
 import orderRoutes from './routes/orderRoutes.js';
+import riderRoutes from './routes/riderRoutes.js';
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use('/api/customers', customerRoutes); // Add customer routes
 app.use('/api/thanas', ThanaRoutes); // Add Thana routes
 app.use('/api/vouchers', voucherRoutes); // Add voucher routes
 app.use('/api/orders', orderRoutes);
+app.use('/api/rider', riderRoutes); // Add rider routes
 
 (async () => {
   try {

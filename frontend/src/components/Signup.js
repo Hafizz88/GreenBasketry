@@ -111,7 +111,20 @@ function Signup() {
         console.log('User ID saved to localStorage:', userId);
         localStorage.setItem('role', role);
         console.log('Role saved to localStorage:', role);
+        
+        // Create rider data structure for RiderHome
         if(role=='rider'){
+          console.log('Rider signup response:', data); // Debug log
+          const riderData = {
+            rider_id: data.userId, // The authController returns userId for riders
+            name: formData.name,
+            email: formData.email,
+            phone: formData.phone,
+            vehicle_info: formData.vehicle_info,
+            available: true  // Set as available by default
+          };
+          console.log('Created rider data:', riderData); // Debug log
+          localStorage.setItem('user', JSON.stringify(riderData));
           navigate('/rider/home');
           console.log('Would navigate to /rider/home');
         } else {
