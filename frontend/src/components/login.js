@@ -40,8 +40,13 @@ function Login() {
         
         localStorage.setItem('user', JSON.stringify(userObject));
         localStorage.setItem('role', role);
-        localStorage.setItem('userId', data.userId); // Use data.userId instead
-
+        
+        // Fix: Handle both userId and user object
+        const userId = data.userId || data.user[`${role}_id`];
+        localStorage.setItem('userId', userId);
+        
+        console.log('User ID saved:', userId);
+        
         if (role === 'admin') {
           navigate('/admin/dashboard');
         } else if (role === 'rider') {
@@ -56,36 +61,43 @@ function Login() {
       alert('Login failed. Server might be down.');
       console.error(err);
     }
-  }; // ← Make sure this closing brace is here
+  };
 
   return (
     <div className="container">
-      <h2>Login as {role.charAt(0).toUpperCase() + role.slice(1)}</h2>
-      
-      <input 
-        placeholder="E-mail" 
-        value={email} 
-        onChange={e => setEmail(e.target.value)} 
-      />
-      
-      <input 
-        type="password" 
-        placeholder="Password" 
-        value={password} 
-        onChange={e => setPassword(e.target.value)} 
-      />
-      
-      <select value={role} onChange={e => setRole(e.target.value)}>
-        <option value="admin">Admin</option>
-        <option value="customer">Customer</option>
-        <option value="rider">Rider</option>
-      </select>
-      
-      <button onClick={handleLogin}>Login</button>
-      
-      <p>
-        Don't have an account? <Link to="/signup">Sign up</Link>
-      </p>
+      <div className="login-form">
+        <div className="role-indicator">{role}</div>
+        <div className="form-content">
+          <h2>Login</h2>
+          
+          <input 
+            placeholder="E-mail" 
+            value={email} 
+            onChange={e => setEmail(e.target.value)} 
+          />
+          
+          <input 
+            type="password" 
+            placeholder="Password" 
+            value={password} 
+            onChange={e => setPassword(e.target.value)} 
+          />
+          
+          <select value={role} onChange={e => setRole(e.target.value)}>
+            <option value="admin">Admin</option>
+            <option value="customer">Customer</option>
+            <option value="rider">Rider</option>
+          </select>
+          
+          <button onClick={handleLogin}>Sign In</button>
+          
+          <div className="link-container">
+            <p>
+              Don't have an account? <Link to="/signup">Sign up</Link>
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

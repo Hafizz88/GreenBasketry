@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-
+import './Signup.css';
 
 function Signup() {
   const [formData, setFormData] = useState({
@@ -97,16 +97,13 @@ function Signup() {
       const data = await res.json();
       if (res.ok) {
         alert(data.message);
-        // Note: localStorage not available in this demo
         
         localStorage.setItem('userId', JSON.stringify(data.userId));
         console.log('User ID saved to localStorage:', data.userId);
         localStorage.setItem('role', role); 
         console.log('Role saved to localStorage:', role);
         
-
         navigate('/home');
-
         console.log('Would navigate to /product');
       } else {
         alert(data.error);
@@ -119,104 +116,113 @@ function Signup() {
 
   return (
     <div className="signup-container">
-      <h2>Signup</h2>
-      
-      {/* Debug info */}
-
-      <input
-        name="name"
-        placeholder="Full Name"
-        value={formData.name}
-        onChange={handleChange}
-      />
-      <input
-        name="email"
-        placeholder="Email"
-        value={formData.email}
-        onChange={handleChange}
-      />
-      <input
-        name="password"
-        type="password"
-        placeholder="Password"
-        value={formData.password}
-        onChange={handleChange}
-      />
-      <input
-        name="phone"
-        placeholder="Phone"
-        value={formData.phone}
-        onChange={handleChange}
-      />
-
-      <select 
-        name="role" 
-        value={formData.role} 
-        onChange={handleChange}
-      >
-        <option value="admin">Admin</option>
-        <option value="customer">Customer</option>
-        <option value="rider">Rider</option>
-      </select>
-
-      {formData.role === 'rider' && (
-        <input
-          name="vehicle_info"
-          placeholder="Vehicle Info"
-          value={formData.vehicle_info}
-          onChange={handleChange}
-        />
-      )}
-
-      {formData.role === 'customer' && (
-        <>
+      <div className="signup-form">
+        <div className="role-indicator">{formData.role}</div>
+        <div className="form-content">
+          <h2>Signup</h2>
+          
           <input
-            name="address_line"
-            placeholder="Address Line"
-            value={formData.address_line}
+            name="name"
+            placeholder="Full Name"
+            value={formData.name}
             onChange={handleChange}
           />
           
-          <select
-            name="thana_name"
-            value={formData.thana_name}
-            onChange={handleChange}
-            required
-          >
-            <option value="">Select a Thana</option>
-            {loading ? (
-              <option value="">Loading thanas...</option>
-            ) : error ? (
-              <option value="">Error loading thanas</option>
-            ) : thanas.length === 0 ? (
-              <option value="">No thanas available</option>
-            ) : (
-              thanas.map((thana, index) => {
-                // Handle different possible thana object structures
-                const thanaName = thana.thana_name || thana.name || thana.title || thana;
-                const thanaId = thana.id || thana._id || index;
-                
-                return (
-                  <option key={thanaId} value={thanaName}>
-                    {thanaName}
-                  </option>
-                );
-              })
-            )}
-          </select>
-
           <input
-            name="postal_code"
-            placeholder="Postal Code (optional)"
-            value={formData.postal_code}
+            name="email"
+            placeholder="Email"
+            value={formData.email}
             onChange={handleChange}
           />
-        </>
-      )}
+          
+          <input
+            name="password"
+            type="password"
+            placeholder="Password"
+            value={formData.password}
+            onChange={handleChange}
+          />
+          
+          <input
+            name="phone"
+            placeholder="Phone"
+            value={formData.phone}
+            onChange={handleChange}
+          />
 
-      <button onClick={handleSignup}>Signup</button>
-      
-      <p>Already have an account? <a href="/">Login</a></p>
+          <select 
+            name="role" 
+            value={formData.role} 
+            onChange={handleChange}
+          >
+            <option value="admin">Admin</option>
+            <option value="customer">Customer</option>
+            <option value="rider">Rider</option>
+          </select>
+
+          {formData.role === 'rider' && (
+            <div className="conditional-fields">
+              <input
+                name="vehicle_info"
+                placeholder="Vehicle Info"
+                value={formData.vehicle_info}
+                onChange={handleChange}
+              />
+            </div>
+          )}
+
+          {formData.role === 'customer' && (
+            <div className="conditional-fields">
+              <input
+                name="address_line"
+                placeholder="Address Line"
+                value={formData.address_line}
+                onChange={handleChange}
+              />
+              
+              <select
+                name="thana_name"
+                value={formData.thana_name}
+                onChange={handleChange}
+                disabled={loading}
+                required
+              >
+                <option value="">Select a Thana</option>
+                {loading ? (
+                  <option value="">Loading thanas...</option>
+                ) : error ? (
+                  <option value="">Error loading thanas</option>
+                ) : thanas.length === 0 ? (
+                  <option value="">No thanas available</option>
+                ) : (
+                  thanas.map((thana, index) => {
+                    // Handle different possible thana object structures
+                    const thanaName = thana.thana_name || thana.name || thana.title || thana;
+                    const thanaId = thana.id || thana._id || index;
+                    
+                    return (
+                      <option key={thanaId} value={thanaName}>
+                        {thanaName}
+                      </option>
+                    );
+                  })
+                )}
+              </select>
+
+              <input
+                name="postal_code"
+                placeholder="Postal Code (optional)"
+                value={formData.postal_code}
+                onChange={handleChange}
+              />
+            </div>
+          )}
+
+          <button onClick={handleSignup}>Create Account</button>
+          
+          <p>Already have an account? <Link to="/">Login</Link></p>
+        </div>
+      </div>
     </div>
   );
 }

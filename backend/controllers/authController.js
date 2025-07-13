@@ -26,10 +26,12 @@ const login = async (req, res) => {
 
     // Return the complete user object
     res.status(200).json({ 
-      message: 'Login successful', 
-      user: user,  // Add this line
-      role 
-    });
+  message: 'Login successful', 
+  user: user,
+  userId: user[`${role}_id`], // Add this line - extracts the correct ID
+  role 
+});
+
   } catch (err) {
     console.error('❌ Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });

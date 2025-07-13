@@ -18,6 +18,14 @@ function CustomerProfile() {
   const customerId = localStorage.getItem('userId');
 
   useEffect(() => {
+    console.log('Customer ID from localStorage:', customerId);
+  console.log('Type of customer ID:', typeof customerId);
+  
+  if (!customerId) {
+    console.error('No customer ID found in localStorage');
+    setLoading(false);
+    return;}
+    
     const fetchProfile = async () => {
       try {
         // Fetch customer data

@@ -1,12 +1,22 @@
 import { client } from "../db.js";
 // 📌 Utility function to add a customer 
+// In customerController.js - Add better error handling
 export const getCustomerById = async (req, res) => {
   const { customer_id } = req.params;
+  
+  console.log('Fetching customer with ID:', customer_id);
+  
+  if (!customer_id) {
+    return res.status(400).json({ error: 'Customer ID is required' });
+  }
+  
   try {
     const result = await client.query(
       `SELECT * FROM customers WHERE customer_id = $1`,
       [customer_id]
     );
+
+    console.log('Query result:', result.rows);
 
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Customer not found' });

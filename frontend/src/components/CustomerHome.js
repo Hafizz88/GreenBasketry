@@ -240,166 +240,138 @@ function CustomerHome() {
     return selectedCategory || 'Select a Category';
   };
 
-  const displayedProducts = getDisplayedProducts();
-
-  return (
-    <div className="homepage">
-      <header className="header">
-        <div className="welcome-section">
-          <div className="welcome-left">
-            <h1 className="dynamic-title">
-              <span>Welcome to</span>
-              <span className="brand-gradient" ref={brandRef}></span>
-            </h1>
-            <div className="search-bar-animated">
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={e => setSearchTerm(e.target.value)}
-                onFocus={() => setInputFocused(true)}
-                onBlur={() => setInputFocused(false)}
-                autoComplete="off"
-                id="animated-search"
-              />
-              {(!searchTerm && !inputFocused) && (
-                <span className="search-placeholder" ref={placeholderRef}></span>
-              )}
-              <button className="search-btn">Search</button>
-            </div>
-          </div>
-          <div className="welcome-right">
-            <div className="profile-cart-card">
-              <button className="profile-btn" onClick={handleProfileClick}>
-                <span role="img" aria-label="profile">👤</span> My Profile
-              </button>
-              <button className="cart-btn" onClick={handleCartClick}>
-                <span role="img" aria-label="cart">🛒</span> Cart
-              </button>
-            </div>
-          </div>
+const displayedProducts = getDisplayedProducts();
+return (
+  <div className="homepage">
+  <header className="header">
+    <div className="welcome-section">
+      <div className="welcome-left">
+        <h1 className="dynamic-title">
+          <span>Welcome to</span>
+          <span className="brand-gradient" ref={brandRef}></span>
+        </h1>
+        <div className="search-bar-animated">
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+            onFocus={() => setInputFocused(true)}
+            onBlur={() => setInputFocused(false)}
+            autoComplete="off"
+            id="animated-search"
+            placeholder="Search for products"
+          />
+          {(!searchTerm && !inputFocused) && (
+            <span className="search-placeholder" ref={placeholderRef}></span>
+          )}
+          <button className="search-btn">Search</button>
         </div>
-      </header>
-      <div className="main-area">
-        <aside className="sidebar">
-          <div className="sidebar-tabs">
-            <button 
-              className={`tab-btn ${activeTab === 'top-selling' ? 'active' : ''}`}
-              onClick={handleTopSellingClick}
-            >
-              🔥 Top Selling
-            </button>
-            <button 
-              className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
-              onClick={() => setActiveTab('categories')}
-            >
-              📂 Categories
-            </button>
-          </div>
-          
-          {activeTab === 'categories' && (
-            <div className="categories-section">
-              <h2>Categories</h2>
-              <ul>
-                {categories.map((category) => (
-                  <li
-                    key={category}
-                    className={selectedCategory === category ? 'active' : ''}
-                    onClick={() => handleCategoryClick(category)}
-                  >
-                    {category}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          
-          {activeTab === 'top-selling' && (
-            <div className="top-selling-info">
-              <h2>Top Selling Products</h2>
-              <p>Discover our most popular items based on customer purchases!</p>
-              <div className="stats">
-                <div className="stat-item">
-                  <span className="stat-number">{topSellingProducts.length}</span>
-                  <span className="stat-label">Hot Items</span>
-                </div>
-              </div>
-            </div>
-          )}
-        </aside>
-        
-        <main className="main-content">
-          <h2>{getMainTitle()}</h2>
-          <div className="product-grid">
-            {displayedProducts.map((product) => (
-              <div key={product.product_id || product.id} className="product-card">
-                {activeTab === 'top-selling' && (
-                  <div className="top-selling-badge">
-                    <span className="fire-icon">🔥</span>
-                    <span className="sold-count">{product.total_times_purchased} sold</span>
-                  </div>
-                )}
-                
-                <img
-                  src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
-                  alt={product.name || product.title || 'No Title'}
-                />
-                
-                <div className="product-info">
-                  <h3>{product.name || product.title || 'No Title'}</h3>
-                  <p className="price">৳{product.price || 'N/A'}</p>
-                  
-                  {activeTab === 'top-selling' && (
-                    <div className="selling-stats">
-                      <small>
-                        {product.total_customers} customers • 
-                        ৳{Math.round(product.total_revenue || 0)} revenue
-                      </small>
-                    </div>
-                  )}
-                  
-                  {product.discount_percentage && (
-                    <div className="discount-badge">
-                      -{product.discount_percentage}% OFF
-                    </div>
-                  )}
-                </div>
-
-                <div className="product-actions">
-                  <button 
-                    onClick={() => handleAddToCart(product.product_id || product.id)}
-                    className="add-to-cart-btn"
-                  >
-                    Add to Cart
-                  </button>
-
-                  <button
-                    onClick={() => handleAddToWishlist(product.product_id || product.id)}
-                    className="wishlist-btn"
-                  >
-                    ❤️
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-          
-          {displayedProducts.length === 0 && (
-            <div className="no-products">
-              <p>
-                {searchTerm 
-                  ? 'No products found matching your search.' 
-                  : activeTab === 'top-selling' 
-                    ? 'No top selling products available yet.' 
-                    : 'No products available in this category.'}
-              </p>
-            </div>
-          )}
-        </main>
       </div>
-      <footer className="footer">
-        <p>Help | File a Complaint</p>
-      </footer>
     </div>
+  </header>
+
+  <div className="main-area">
+    <aside className="sidebar">
+      <div className="sidebar-tabs">
+        <button 
+          className={`tab-btn ${activeTab === 'top-selling' ? 'active' : ''}`}
+          onClick={handleTopSellingClick}
+        >
+          🔥 Top Selling
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'categories' ? 'active' : ''}`}
+          onClick={() => setActiveTab('categories')}
+        >
+          📂 Categories
+        </button>
+      </div>
+
+      {activeTab === 'categories' && (
+        <div className="categories-section">
+          <h2>Categories</h2>
+          <ul>
+            {categories.map((category) => (
+              <li
+                key={category}
+                className={selectedCategory === category ? 'active' : ''}
+                onClick={() => handleCategoryClick(category)}
+              >
+                {category}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      {activeTab === 'top-selling' && (
+        <div className="top-selling-info">
+          <h2>Top Selling Products</h2>
+          <p>Discover our most popular items based on customer purchases!</p>
+        </div>
+      )}
+    </aside>
+
+    <main className="main-content">
+      <h2>{getMainTitle()}</h2>
+      <div className="product-grid">
+        {displayedProducts.map((product) => (
+          <div key={product.product_id || product.id} className="product-card">
+            {activeTab === 'top-selling' && (
+              <div className="top-selling-badge">
+                <span className="fire-icon">🔥</span>
+                <span className="sold-count">{product.total_times_purchased} sold</span>
+              </div>
+            )}
+
+            <img
+              src={product.image?.url || product.image_url || product.thumbnail || 'default-image.jpg'}
+              alt={product.name || product.title || 'No Title'}
+            />
+
+            <div className="product-info">
+              <h3>{product.name || product.title || 'No Title'}</h3>
+              <p className="price">৳{product.price || 'N/A'}</p>
+            </div>
+
+            <div className="product-actions">
+              <button 
+                onClick={() => handleAddToCart(product.product_id || product.id)}
+                className="add-to-cart-btn"
+              >
+                Add to Cart
+              </button>
+
+              <button
+                onClick={() => handleAddToWishlist(product.product_id || product.id)}
+                className="wishlist-btn"
+              >
+                ❤️
+              </button>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {displayedProducts.length === 0 && (
+        <div className="no-products">
+          <p>
+            {searchTerm
+              ? 'No products found matching your search.'
+              : activeTab === 'top-selling'
+              ? 'No top selling products available yet.'
+              : 'No products available in this category.'}
+          </p>
+        </div>
+      )}
+    </main>
+  </div>
+
+  <footer className="footer">
+    <p>Help | File a Complaint</p>
+  </footer>
+</div>
+
   );
 }
 
