@@ -4,10 +4,10 @@ import { getAllProducts,getAllCategories,getProductsByCategory ,SearchProductByn
 import verifyToken from '../middleware/verifytoken.js'; // Uncomment if you want to protect these routes
 
 router.get('/', verifyToken, getAllProducts); // Public or protected depending on your design
-router.get('/categories', verifyToken, getAllCategories);
+router.get('/categories', getAllCategories);
 router.get('/category/:category', verifyToken, getProductsByCategory);
 router.get('/search', verifyToken, SearchProductByname);
-router.get('/top-selling', verifyToken, getTopSellingProducts);
+router.get('/top-selling', getTopSellingProducts);
 
 export default router;
 

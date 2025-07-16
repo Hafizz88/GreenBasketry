@@ -34,7 +34,8 @@ const login = async (req, res) => {
     
     res.status(200).json({ 
       message: 'Login successful', 
-      user: user,  // Add this line
+      token, // Include the token in the response
+      user: user,
       role 
     });
   } catch (err) {
@@ -110,7 +111,7 @@ else if (role === 'customer') {
 
   const { customer_id, address_id } = result.rows[0];
   console.log(`✅ Customer created: ID ${customer_id}, Address ID ${address_id}`);
-  const token = jwt.sign({ id: customer_id, email, role, name }, JWT_SECRET, { expiresIn: '1d' });
+  const token = jwt.sign({ id: customer_id, email, role, name }, process.env.JWT_SECRET || 'your_jwt_secret', { expiresIn: '1d' });
 
   return res.status(201).json({
     message: 'Customer registered successfully',

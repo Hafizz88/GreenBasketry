@@ -72,22 +72,19 @@ const updateRiderLocation = async (req, res) => {
 const getAvailableOrdersForRider = async (req, res) => {
   const { riderId } = req.params;
   const { zone } = req.query; // Get zone from query parameter
-  
+  console.log('getAvailableOrdersForRider called:', { riderId, zone });
   try {
     // Verify rider exists
     const riderQuery = await client.query(
       `SELECT rider_id FROM riders WHERE rider_id = $1`,
       [riderId]
     );
-    
     if (riderQuery.rows.length === 0) {
       return res.status(404).json({ error: 'Rider not found' });
     }
-    
     if (!zone) {
       return res.status(400).json({ error: 'Zone parameter is required' });
     }
-    
     // Get unassigned orders in rider's zone
     const ordersQuery = await client.query(
       `SELECT 
@@ -120,7 +117,7 @@ const getAvailableOrdersForRider = async (req, res) => {
       ORDER BY o.order_date ASC`,
       [zone]
     );
-    
+    console.log('ordersQuery result:', ordersQuery.rows);
     res.status(200).json(ordersQuery.rows);
     console.log(`📦 Found ${ordersQuery.rows.length} available orders in zone ${zone}`);
   } catch (error) {
@@ -516,17 +513,16 @@ const getRiderProfile = async (req, res) => {
 const updateRiderAvailability = async (req, res) => {
   const { riderId } = req.params;
   const { available } = req.body;
-  
+  console.log('updateRiderAvailability called:', { riderId, available });
   try {
     const updateQuery = await client.query(
       `UPDATE riders SET available = $1 WHERE rider_id = $2 RETURNING *`,
       [available, riderId]
     );
-    
+    console.log('updateQuery result:', updateQuery.rows);
     if (updateQuery.rows.length === 0) {
       return res.status(404).json({ error: 'Rider not found' });
     }
-    
     res.status(200).json(updateQuery.rows[0]);
     console.log(`🚚 Rider ${riderId} availability updated to ${available}`);
   } catch (error) {

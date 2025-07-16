@@ -307,19 +307,26 @@ export const placeOrder = async (req, res) => {
     const cart = cartResult.rows[0];
     let subtotal = parseFloat(cart.cart_price) || 0;
 
-    // Check if cart has items
-    const cartItemsCheck = await client.query(
-      `SELECT COUNT(*) as item_count FROM cart_items WHERE cart_id = $1`,
+    // 1. Fetch cart items and calculate subtotal and VAT per product
+    const cartItemsResult = await client.query(
+      `SELECT ci.product_id, ci.quantity, p.price, p.vat_percantage
+       FROM cart_items ci
+       JOIN products p ON ci.product_id = p.product_id
+       WHERE ci.cart_id = $1`,
       [cart_id]
     );
-    
-    if (parseInt(cartItemsCheck.rows[0].item_count) === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cart is empty' 
-      });
+    const cartItems = cartItemsResult.rows;
+    if (cartItems.length === 0) throw new Error('Cart is empty');
+
+    let vat_amount = 0;
+    for (const item of cartItems) {
+      const itemSubtotal = Number(item.price) * Number(item.quantity);
+      subtotal += itemSubtotal;
+      // Calculate VAT for each item using its vat_percantage
+      const itemVat = itemSubtotal * (Number(item.vat_percantage || 0) / 100);
+      vat_amount += itemVat;
     }
+    vat_amount = Math.round(vat_amount); // or use toFixed(2) for decimals
 
     // 4. Get delivery fee from zone
     const zoneResult = await client.query(
@@ -328,10 +335,7 @@ export const placeOrder = async (req, res) => {
     );
     const delivery_fee = zoneResult.rows[0]?.default_delivery_fee || 70;
 
-    // 5. Calculate VAT (assuming 15% VAT)
-    const vat_amount = subtotal * 0.15;
-
-    // 6. Handle coupon discount
+    // 5. Handle coupon discount
     let discount_amount = 0;
     let applied_coupon_id = null;
     
@@ -352,7 +356,7 @@ export const placeOrder = async (req, res) => {
       }
     }
 
-    // 7. Validate and calculate points value
+    // 6. Validate and calculate points value
     const pointsToUse = parseInt(points_used) || 0;
     let points_value = 0;
     
@@ -377,10 +381,10 @@ export const placeOrder = async (req, res) => {
       points_value = pointsToUse; // assuming 1 point = 1 BDT
     }
 
-    // 8. Calculate total
+    // 7. Calculate total
     const total_amount = Math.max(0, subtotal + vat_amount + delivery_fee - discount_amount - points_value);
 
-    // 9. Create the order
+    // 8. Create the order
     const orderResult = await client.query(
       `INSERT INTO orders (
         cart_id, address_id, subtotal, vat_amount, delivery_fee, 
@@ -394,7 +398,7 @@ export const placeOrder = async (req, res) => {
 
     const order_id = orderResult.rows[0].order_id;
 
-    // 10. Apply coupon if provided
+    // 9. Apply coupon if provided
     if (applied_coupon_id) {
       await client.query(
         `INSERT INTO applied_coupons (order_id, coupon_id) VALUES ($1, $2)`,
@@ -402,7 +406,7 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 11. Update customer points
+    // 10. Update customer points
     if (pointsToUse > 0) {
       await client.query(
         `UPDATE customers SET points_used = COALESCE(points_used, 0) + $1 WHERE customer_id = $2`,
@@ -410,7 +414,7 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 12. Calculate and add points earned from this order (1 point per 100 BDT)
+    // 11. Calculate and add points earned from this order (1 point per 100 BDT)
     const points_earned = Math.floor(total_amount / 100);
     if (points_earned > 0) {
       await client.query(
@@ -425,16 +429,8 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 13. Update buy history and product stock
-    const cartItems = await client.query(
-      `SELECT ci.product_id, ci.quantity, p.stock 
-       FROM cart_items ci 
-       JOIN products p ON ci.product_id = p.product_id 
-       WHERE ci.cart_id = $1`,
-      [cart_id]
-    );
-
-    for (const item of cartItems.rows) {
+    // 12. Update buy history and product stock
+    for (const item of cartItems) {
       // Check stock availability
       if (item.stock < item.quantity) {
         await client.query('ROLLBACK');
@@ -475,7 +471,7 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 14. Create delivery record
+    // 13. Create delivery record
     const deliveryResult = await client.query(
       `INSERT INTO deliveries (order_id, delivery_status, estimated_time)
        VALUES ($1, 'pending', CURRENT_TIMESTAMP + INTERVAL '45 minutes')
@@ -485,8 +481,8 @@ export const placeOrder = async (req, res) => {
 
     const delivery_id = deliveryResult.rows[0].delivery_id;
 
-    // 15. (Removed auto-assignment to rider)
-    // 16. Clear the cart by setting it to inactive
+    // 14. (Removed auto-assignment to rider)
+    // 15. Clear the cart by setting it to inactive
     await client.query('COMMIT');
 
     res.status(201).json({
