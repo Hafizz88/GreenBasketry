@@ -246,12 +246,12 @@ export const getDeliveryZones = async (req, res) => {
 // POST /api/orders/place - Place an order (simplified but complete)
 export const placeOrder = async (req, res) => {
   const { customer_id, cart_id, coupon_code, points_used } = req.body;
-  
+
   // Validate required fields
   if (!customer_id || !cart_id) {
-    return res.status(400).json({ 
-      success: false, 
-      error: 'Customer ID and Cart ID are required' 
+    return res.status(400).json({
+      success: false,
+      error: 'Customer ID and Cart ID are required'
     });
   }
 
@@ -263,12 +263,11 @@ export const placeOrder = async (req, res) => {
       `SELECT customer_id FROM customers WHERE customer_id = $1`,
       [customer_id]
     );
-    
     if (customerCheck.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Customer not found' 
+      return res.status(400).json({
+        success: false,
+        error: 'Customer not found'
       });
     }
 
@@ -277,128 +276,127 @@ export const placeOrder = async (req, res) => {
       `SELECT address_id, zone_id FROM addresses WHERE customer_id = $1 AND is_default = true LIMIT 1`,
       [customer_id]
     );
-    
     if (addressResult.rows.length === 0) {
       await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'No default address found for customer. Please add a default address first.' 
+      return res.status(400).json({
+        success: false,
+        error: 'No default address found for customer. Please add a default address first.'
       });
     }
-    
     const { address_id, zone_id } = addressResult.rows[0];
 
-    // 3. Get cart details and validate
-    const cartResult = await client.query(
-      `SELECT c.price as cart_price, c.cart_id, c.customer_id
-       FROM carts c
-       WHERE c.cart_id = $1 AND c.customer_id = $2 AND c.is_active = true`,
-      [cart_id, customer_id]
-    );
-    
-    if (cartResult.rows.length === 0) {
-      await client.query('ROLLBACK');
-      return res.status(400).json({ 
-        success: false, 
-        error: 'Cart not found, inactive, or does not belong to customer' 
-      });
-    }
-
-    const cart = cartResult.rows[0];
-    let subtotal = parseFloat(cart.cart_price) || 0;
-
-    // 1. Fetch cart items and calculate subtotal and VAT per product
+    // 3. Fetch cart items with product details (price, vat_percantage, points_rewarded)
     const cartItemsResult = await client.query(
-      `SELECT ci.product_id, ci.quantity, p.price, p.vat_percantage
+      `SELECT ci.product_id, ci.quantity, p.price, p.vat_percantage, p.points_rewarded, p.stock
        FROM cart_items ci
        JOIN products p ON ci.product_id = p.product_id
        WHERE ci.cart_id = $1`,
       [cart_id]
     );
     const cartItems = cartItemsResult.rows;
-    if (cartItems.length === 0) throw new Error('Cart is empty');
+    if (cartItems.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        success: false,
+        error: 'Cart is empty'
+      });
+    }
 
+    // 4. Calculate subtotal, VAT, and product points
+    let subtotal = 0;
     let vat_amount = 0;
+    let total_product_points = 0;
     for (const item of cartItems) {
+      // Check stock availability
+      if (item.stock < item.quantity) {
+        await client.query('ROLLBACK');
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient stock for product ID ${item.product_id}. Available: ${item.stock}, Requested: ${item.quantity}`
+        });
+      }
       const itemSubtotal = Number(item.price) * Number(item.quantity);
       subtotal += itemSubtotal;
-      // Calculate VAT for each item using its vat_percantage
-      const itemVat = itemSubtotal * (Number(item.vat_percantage || 0) / 100);
-      vat_amount += itemVat;
+      // Calculate VAT for this product
+      const itemVAT = itemSubtotal * ((Number(item.vat_percantage) || 0) / 100);
+      vat_amount += itemVAT;
+      // Calculate product points
+      total_product_points += (Number(item.points_rewarded) || 0) * Number(item.quantity);
     }
     vat_amount = Math.round(vat_amount); // or use toFixed(2) for decimals
 
-    // 4. Get delivery fee from zone
+    // 5. Get delivery fee from zone
     const zoneResult = await client.query(
       `SELECT default_delivery_fee FROM delivery_zones WHERE zone_id = $1`,
       [zone_id]
     );
-    const delivery_fee = zoneResult.rows[0]?.default_delivery_fee || 70;
+    const delivery_fee = Number(zoneResult.rows[0]?.default_delivery_fee) || 70;
 
-    // 5. Handle coupon discount
+    // 6. Handle coupon discount
     let discount_amount = 0;
     let applied_coupon_id = null;
-    
     if (coupon_code) {
       const couponResult = await client.query(
-        `SELECT coupon_id, discount_percent FROM coupons 
-         WHERE code = $1 AND is_active = true 
+        `SELECT coupon_id, discount_percent FROM coupons
+         WHERE code = $1 AND is_active = true
          AND valid_from <= CURRENT_DATE AND valid_to >= CURRENT_DATE`,
         [coupon_code]
       );
-      
       if (couponResult.rows.length > 0) {
         const coupon = couponResult.rows[0];
         applied_coupon_id = coupon.coupon_id;
-        discount_amount = subtotal * (coupon.discount_percent / 100);
-      } else {
-        console.log(`Coupon '${coupon_code}' not found or expired`);
+        discount_amount = subtotal * (Number(coupon.discount_percent) / 100);
       }
     }
 
-    // 6. Validate and calculate points value
-    const pointsToUse = parseInt(points_used) || 0;
+    // 7. Validate and calculate points value
+    const pointsToUse = Number(points_used) || 0;
     let points_value = 0;
-    
     if (pointsToUse > 0) {
       // Check if customer has enough points
       const customerPoints = await client.query(
-        `SELECT (COALESCE(points_earned, 0) - COALESCE(points_used, 0)) as available_points 
+        `SELECT (COALESCE(points_earned, 0) - COALESCE(points_used, 0)) as available_points
          FROM customers WHERE customer_id = $1`,
         [customer_id]
       );
-      
-      const availablePoints = parseInt(customerPoints.rows[0]?.available_points) || 0;
-      
+      const availablePoints = Number(customerPoints.rows[0]?.available_points) || 0;
       if (pointsToUse > availablePoints) {
         await client.query('ROLLBACK');
-        return res.status(400).json({ 
-          success: false, 
-          error: `Insufficient points. Available: ${availablePoints}, Requested: ${pointsToUse}` 
+        return res.status(400).json({
+          success: false,
+          error: `Insufficient points. Available: ${availablePoints}, Requested: ${pointsToUse}`
         });
       }
-      
       points_value = pointsToUse; // assuming 1 point = 1 BDT
     }
 
-    // 7. Calculate total
-    const total_amount = Math.max(0, subtotal + vat_amount + delivery_fee - discount_amount - points_value);
+    // Debug log for calculation values (after all assignments)
+    console.log({
+      subtotal,
+      vat_amount,
+      delivery_fee,
+      discount_amount,
+      points_value
+    });
 
-    // 8. Create the order
+    // 8. Calculate total
+    const total_amount = Math.max(0, subtotal + vat_amount + delivery_fee - discount_amount - points_value);
+    console.log({ total_amount });
+
+    // 9. Create the order
     const orderResult = await client.query(
       `INSERT INTO orders (
-        cart_id, address_id, subtotal, vat_amount, delivery_fee, 
-        discount_amount, points_used, points_value, total_amount, 
-        order_status, payment_status, order_date
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', false, CURRENT_TIMESTAMP) 
+        cart_id, address_id, subtotal, vat_amount, delivery_fee,
+        discount_amount, points_used, points_value, total_amount,
+        order_status, payment_status, order_date, points_earned
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, 'pending', false, CURRENT_TIMESTAMP, $10)
       RETURNING order_id`,
-      [cart_id, address_id, subtotal, vat_amount, delivery_fee, 
-       discount_amount, pointsToUse, points_value, total_amount]
+      [cart_id, address_id, subtotal, vat_amount, delivery_fee,
+        discount_amount, pointsToUse, points_value, total_amount, total_product_points]
     );
-
     const order_id = orderResult.rows[0].order_id;
 
-    // 9. Apply coupon if provided
+    // 10. Apply coupon if provided
     if (applied_coupon_id) {
       await client.query(
         `INSERT INTO applied_coupons (order_id, coupon_id) VALUES ($1, $2)`,
@@ -406,7 +404,7 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 10. Update customer points
+    // 11. Update customer points (used)
     if (pointsToUse > 0) {
       await client.query(
         `UPDATE customers SET points_used = COALESCE(points_used, 0) + $1 WHERE customer_id = $2`,
@@ -414,42 +412,25 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 11. Calculate and add points earned from this order (1 point per 100 BDT)
-    const points_earned = Math.floor(total_amount / 100);
-    if (points_earned > 0) {
+    // 12. Add product points to customer
+    if (total_product_points > 0) {
       await client.query(
         `UPDATE customers SET points_earned = COALESCE(points_earned, 0) + $1 WHERE customer_id = $2`,
-        [points_earned, customer_id]
-      );
-      
-      // Update order with points earned
-      await client.query(
-        `UPDATE orders SET points_earned = $1 WHERE order_id = $2`,
-        [points_earned, order_id]
+        [total_product_points, customer_id]
       );
     }
 
-    // 12. Update buy history and product stock
+    // 13. Update buy history and product stock
     for (const item of cartItems) {
-      // Check stock availability
-      if (item.stock < item.quantity) {
-        await client.query('ROLLBACK');
-        return res.status(400).json({ 
-          success: false, 
-          error: `Insufficient stock for product ID ${item.product_id}. Available: ${item.stock}, Requested: ${item.quantity}` 
-        });
-      }
-
       // Check if customer has bought this product before
       const historyCheck = await client.query(
         `SELECT * FROM buy_history WHERE customer_id = $1 AND product_id = $2`,
         [customer_id, item.product_id]
       );
-
       if (historyCheck.rows.length > 0) {
         // Update existing history
         await client.query(
-          `UPDATE buy_history SET 
+          `UPDATE buy_history SET
            last_purchased = CURRENT_TIMESTAMP,
            times_purchased = times_purchased + $1
            WHERE customer_id = $2 AND product_id = $3`,
@@ -463,7 +444,6 @@ export const placeOrder = async (req, res) => {
           [customer_id, item.product_id, item.quantity]
         );
       }
-
       // Update product stock
       await client.query(
         `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
@@ -471,18 +451,21 @@ export const placeOrder = async (req, res) => {
       );
     }
 
-    // 13. Create delivery record
+    // 14. Create delivery record
     const deliveryResult = await client.query(
       `INSERT INTO deliveries (order_id, delivery_status, estimated_time)
        VALUES ($1, 'pending', CURRENT_TIMESTAMP + INTERVAL '45 minutes')
        RETURNING delivery_id`,
       [order_id]
     );
-
     const delivery_id = deliveryResult.rows[0].delivery_id;
 
-    // 14. (Removed auto-assignment to rider)
-    // 15. Clear the cart by setting it to inactive
+    // 15. (Removed auto-assignment to rider)
+    // 16. Clear the cart by setting it to inactive
+    await client.query(
+      `UPDATE carts SET is_active = false WHERE cart_id = $1`,
+      [cart_id]
+    );
     await client.query('COMMIT');
 
     res.status(201).json({
@@ -491,16 +474,16 @@ export const placeOrder = async (req, res) => {
       order_id: order_id,
       delivery_id: delivery_id,
       total_amount: total_amount,
-      points_earned: points_earned
+      points_earned: total_product_points
     });
 
   } catch (err) {
     await client.query('ROLLBACK');
     console.error('Order placement error:', err);
-    res.status(500).json({ 
-      success: false, 
-      error: 'Failed to place order', 
-      details: err.message 
+    res.status(500).json({
+      success: false,
+      error: 'Failed to place order',
+      details: err.message
     });
   }
 };

@@ -3,11 +3,12 @@ import { client } from '../db.js';
 // Add a new product
 export const addProduct = async (req, res) => {
   const { name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
+  const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   try {
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percantage)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8) RETURNING *`,
-      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage]
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percantage, updated_by_admin_id)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
+      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage, admin_id]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -71,10 +72,14 @@ export const deleteProduct = async (req, res) => {
 // Update all product fields (except id)
 export const updateProduct = async (req, res) => {
   const { product_id, name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
+  const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
+  if (!admin_id) {
+    return res.status(400).json({ error: 'Admin ID is required' });
+  }
   try {
     const result = await client.query(
-      `UPDATE products SET name=$1, category=$2, price=$3, stock=$4, description=$5, image_url=$6, discount_percentage=$7, vat_percentage=$8 WHERE product_id=$9 RETURNING *`,
-      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage, product_id]
+      `UPDATE products SET name=$1, category=$2, price=$3, stock=$4, description=$5, image_url=$6, discount_percentage=$7, vat_percentage=$8, updated_by_admin_id=$9 WHERE product_id=$10 RETURNING *`,
+      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage, admin_id, product_id]
     );
     res.json(result.rows[0]);
   } catch (err) {

@@ -13,13 +13,15 @@ import ThanaRoutes from './routes/ThanaRoutes.js'; // include .js extension
 import voucherRoutes from './routes/voucherRoutes.js'; // include .js extension
 import orderRoutes from './routes/orderRoutes.js';
 import riderRoutes from './routes/riderRoutes.js';
+import http from 'http';
+import { Server } from 'socket.io';
 
 dotenv.config();
 
 const PORT = process.env.PORT || 5000;
 const app = express();
 
-app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:8080'], credentials: true }));
+app.use(cors({ origin: ['http://localhost:3000', 'http://localhost:8081','http://192.168.10.59:8081'], credentials: true }));
 app.use(express.json());
 app.use('/api/admin', adminRoutes);
 app.use('/', routes);
@@ -33,10 +35,22 @@ app.use('/api/vouchers', voucherRoutes); // Add voucher routes
 app.use('/api/orders', orderRoutes);
 app.use('/api/rider', riderRoutes); // Add rider routes
 
+const server = http.createServer(app);
+const io = new Server(server, { cors: { origin: ['http://localhost:3000', 'http://localhost:8081','http://192.168.10.59:8081'], credentials: true } });
+
+// Socket.io logic for customer room joining
+io.on('connection', (socket) => {
+  socket.on('joinCustomerRoom', (customerId) => {
+    socket.join(customerId.toString());
+  });
+});
+
+export { io };
+
 (async () => {
   try {
     await connectDB(); // connect once before starting the server
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       const customers= async () => {
         try {

@@ -200,6 +200,12 @@ const ProductsPage = () => {
                       {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
                     </span>
                   </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Stock:</span>
+                    <span className={product.stock > 0 ? "text-success font-semibold" : "text-destructive font-semibold"}>
+                      {product.stock}
+                    </span>
+                  </div>
 
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-primary">

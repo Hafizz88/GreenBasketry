@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import heroImage from '@/assets/hero-grocery.jpg';
+import { io as socketIOClient, Socket } from 'socket.io-client';
 
 interface Product {
   product_id?: number;
@@ -155,6 +156,39 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
+
+  // Real-time notifications via socket.io
+  useEffect(() => {
+    const socket: Socket = socketIOClient('http://localhost:5000');
+    const customerId = localStorage.getItem('userId');
+    if (customerId) {
+      socket.emit('joinCustomerRoom', customerId);
+    }
+    socket.on('orderAccepted', (data) => {
+      toast({
+        title: 'Order Accepted',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    socket.on('riderArrived', (data) => {
+      toast({
+        title: 'Rider Arrived',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    socket.on('paymentConfirmed', (data) => {
+      toast({
+        title: 'Delivery Complete! 🎉',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [toast]);
 
   const handleAddToCart = async (productId: number) => {
     if (!isLoggedIn()) {

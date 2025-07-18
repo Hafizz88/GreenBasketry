@@ -40,7 +40,7 @@ const AddProduct: React.FC = () => {
     setError('');
     try {
       await axios.post(
-        'http://localhost:5000/api/admin/products',
+        'http://localhost:5000/api/admin/add-product',
         {
           name: form.name,
           category: form.category,

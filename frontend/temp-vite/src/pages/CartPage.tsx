@@ -14,6 +14,7 @@ interface CartItem {
   price: number;
   quantity: number;
   image_url: string;
+  // stock: number; // Remove stock from the interface
 }
 
 interface Cart {
@@ -247,6 +248,7 @@ const CartPage = () => {
                     <div className="flex-1">
                       <h3 className="font-semibold text-foreground">{item.name}</h3>
                       <p className="text-primary font-bold">৳{Number(item.price || 0).toFixed(2)}</p>
+                      {/* <p className="text-xs text-muted-foreground">Stock: {item.stock}</p> */} {/* Remove stock display */}
                     </div>
                     
                     <div className="flex items-center space-x-2">

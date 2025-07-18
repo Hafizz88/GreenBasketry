@@ -30,11 +30,20 @@ const adminLogin = async (req, res) => {
 
     // Admin is successfully authenticated
     const token = jwt.sign(
-      { id: admin.id, role: 'admin', email: admin.email },
+      { id: admin.admin_id, role: 'admin', email: admin.email }, // Keep this as is
       process.env.JWT_SECRET || 'your_jwt_secret',
       { expiresIn: '1d' }
     );
-    res.status(200).json({ message: 'Admin login successful', token,admin });
+    
+    // Update the response structure to match what frontend expects
+    res.status(200).json({ 
+      message: 'Admin login successful', 
+      token,
+      user: {
+        admin_id: admin.admin_id  // Your frontend looks for user.admin_id
+      },
+      userId: admin.admin_id  // Your frontend also stores this
+    });
   } catch (err) {
     console.error('❌ Admin Login Error:', err.stack || err.message || err);
     res.status(500).json({ error: 'Internal server error' });

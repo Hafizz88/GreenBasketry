@@ -1,4 +1,5 @@
 import { client } from "../db.js";
+import { io } from '../index.js';
 
 // Rider login
 const riderLogin = async (req, res) => {
@@ -167,6 +168,22 @@ const acceptOrder = async (req, res) => {
       `UPDATE deliveries SET delivery_status = 'assigned' WHERE delivery_id = $1`,
       [deliveryId]
     );
+
+    // Find customerId for this delivery
+    const customerResult = await client.query(
+      `SELECT c.customer_id FROM deliveries d
+       JOIN orders o ON d.order_id = o.order_id
+       JOIN carts c ON o.cart_id = c.cart_id
+       WHERE d.delivery_id = $1`,
+      [deliveryId]
+    );
+    if (customerResult.rows.length > 0) {
+      const customerId = customerResult.rows[0].customer_id;
+      io.to(customerId.toString()).emit('orderAccepted', {
+        deliveryId,
+        message: 'Your order has been accepted by a rider.'
+      });
+    }
     
     res.status(201).json({
       message: 'Order accepted successfully',
@@ -235,6 +252,22 @@ const markArrival = async (req, res) => {
       `UPDATE deliveries SET delivery_status = 'out_for_delivery' WHERE delivery_id = $1`,
       [deliveryId]
     );
+
+    // Find customerId for this delivery
+    const customerResult = await client.query(
+      `SELECT c.customer_id FROM deliveries d
+       JOIN orders o ON d.order_id = o.order_id
+       JOIN carts c ON o.cart_id = c.cart_id
+       WHERE d.delivery_id = $1`,
+      [deliveryId]
+    );
+    if (customerResult.rows.length > 0) {
+      const customerId = customerResult.rows[0].customer_id;
+      io.to(customerId.toString()).emit('riderArrived', {
+        deliveryId,
+        message: 'Your rider has arrived!'
+      });
+    }
     
     res.status(200).json({
       message: 'Arrival marked successfully',
@@ -273,6 +306,22 @@ const confirmPaymentReceived = async (req, res) => {
        WHERE order_id = $1`,
       [orderId]
     );
+
+    // Find customerId for this order and send notification
+    const customerResult = await client.query(
+      `SELECT c.customer_id FROM orders o
+       JOIN carts c ON o.cart_id = c.cart_id
+       WHERE o.order_id = $1`,
+      [orderId]
+    );
+    
+    if (customerResult.rows.length > 0) {
+      const customerId = customerResult.rows[0].customer_id;
+      io.to(customerId.toString()).emit('paymentConfirmed', {
+        orderId,
+        message: 'Thank you for your order! Payment received and delivery completed. Enjoy your groceries! 🛒✨'
+      });
+    }
     
     res.status(200).json({
       message: 'Payment confirmed and delivery completed',
