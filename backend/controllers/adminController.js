@@ -35,11 +35,15 @@ export const updateProductPrice = async (req, res) => {
 // Create a new discount coupon
 export const createCoupon = async (req, res) => {
   const { code, description, discount_percent, valid_from, valid_to } = req.body;
+  const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
+  if (!admin_id) {
+    return res.status(400).json({ error: 'Admin ID is required' });
+  }
   try {
     const result = await client.query(
-      `INSERT INTO coupons (code, description, discount_percent, valid_from, valid_to)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-      [code, description, discount_percent, valid_from, valid_to]
+      `INSERT INTO coupons (code, description, discount_percent, valid_from, valid_to, created_by_admin_id)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [code, description, discount_percent, valid_from, valid_to, admin_id]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -100,11 +104,17 @@ export const getAllCoupons = async (req, res) => {
 // Delete a coupon
 export const deleteCoupon = async (req, res) => {
   const { id } = req.params;
+  const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
+  if (!admin_id) {
+    return res.status(400).json({ error: 'Admin ID is required' });
+  }
   try {
+    // Optionally, you could log this delete action with admin_id for auditing
     await client.query('DELETE FROM coupons WHERE coupon_id = $1', [id]);
     res.json({ message: 'Coupon deleted' });
   } catch (err) {
     res.status(500).json({ error: 'Failed to delete coupon' });
+    console.log(err);
   }
 };
 
@@ -112,22 +122,18 @@ export const deleteCoupon = async (req, res) => {
 export const updateCoupon = async (req, res) => {
   const coupon_id = req.params.id;
   const { code, description, discount_percent, valid_from, valid_to, is_active } = req.body;
-  
-  console.log('Updating coupon ID:', coupon_id);
-  console.log('Request body:', req.body);
-  
+  const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
+  if (!admin_id) {
+    return res.status(400).json({ error: 'Admin ID is required' });
+  }
   try {
     const result = await client.query(
-      `UPDATE coupons SET code=$1, description=$2, discount_percent=$3, valid_from=$4, valid_to=$5, is_active=$6 WHERE coupon_id=$7 RETURNING *`,
-      [code, description, discount_percent, valid_from, valid_to, is_active, coupon_id]
+      `UPDATE coupons SET code=$1, description=$2, discount_percent=$3, valid_from=$4, valid_to=$5, is_active=$6, created_by_admin_id=$7 WHERE coupon_id=$8 RETURNING *`,
+      [code, description, discount_percent, valid_from, valid_to, is_active, admin_id, coupon_id]
     );
-    
-    console.log('Update result:', result.rows);
-    
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Coupon not found' });
     }
-    
     res.json(result.rows[0]);
   } catch (err) {
     console.error('Error updating coupon:', err);
