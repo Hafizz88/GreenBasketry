@@ -1,5 +1,32 @@
 import { client } from "../db.js";
+import { uploadImageToCloudinary } from '../controllers/cloudinaryController.js';
 
+// Create product with image upload to Cloudinary
+const createProduct = async (req, res) => {
+  const { name, description, price, quantity, categoryid } = req.body;
+  let imageUrl = null;
+
+  try {
+    // Upload image if present
+    if (req.file) {
+      imageUrl = await uploadImageToCloudinary(req.file.buffer); // Handle image upload
+    }
+
+    // Insert product into the database
+    const result = await client.query(
+      `INSERT INTO products (name, description, price, quantity, categoryid, image_url) 
+      VALUES ($1, $2, $3, $4, $5, $6) RETURNING product_id`,
+      [name, description, price, quantity, categoryid, imageUrl]
+    );
+
+    res.status(201).json({ message: "Product created successfully", product: result.rows[0] });
+  } catch (error) {
+    console.error("Error creating product:", error);
+    res.status(500).json({ error: "Internal server error" });
+  }
+};
+
+// Fetch all products
 const getAllProducts = async (req, res) => {
   try {
     const productQuery = await client.query(
@@ -13,6 +40,7 @@ const getAllProducts = async (req, res) => {
   }
 };
 
+// Fetch all categories
 const getAllCategories = async (req, res) => {
   try {
     const categoryQuery = await client.query(
@@ -26,6 +54,7 @@ const getAllCategories = async (req, res) => {
   }
 };
 
+// Fetch products by category
 const getProductsByCategory = async (req, res) => {
   const { category } = req.params;
   try {
@@ -41,6 +70,7 @@ const getProductsByCategory = async (req, res) => {
   }
 };
 
+// Search products by name
 const SearchProductByname = async (req, res) => {
   const { name } = req.query;
   try {
@@ -56,6 +86,7 @@ const SearchProductByname = async (req, res) => {
   }
 };
 
+// Get top selling products
 const getTopSellingProducts = async (req, res) => {
   const { limit = 10 } = req.query;
   try {
@@ -96,6 +127,7 @@ const getTopSellingProducts = async (req, res) => {
   }
 };
 
+// Get top selling products by category
 const getTopSellingByCategory = async (req, res) => {
   const { category } = req.params;
   const { limit = 5 } = req.query;
@@ -145,5 +177,6 @@ export {
   getProductsByCategory, 
   SearchProductByname,
   getTopSellingProducts,
-  getTopSellingByCategory 
+  getTopSellingByCategory,
+  createProduct // Make sure to export createProduct
 };

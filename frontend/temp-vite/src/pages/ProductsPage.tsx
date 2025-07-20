@@ -35,11 +35,12 @@ const ProductsPage = () => {
     return localStorage.getItem('userId') && localStorage.getItem('token');
   };
 
+  // Fetch products from API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         const response = await axios.get('http://localhost:5000/api/products', getAuthHeader());
-        setProducts(response.data);
+        setProducts(response.data);  // Store fetched products
       } catch (err) {
         console.error('Failed to load products', err);
         toast({
