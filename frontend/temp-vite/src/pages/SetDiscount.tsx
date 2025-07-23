@@ -31,7 +31,7 @@ const SetDiscount: React.FC = () => {
 
   const fetchProducts = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/products', getAuthHeader());
+      const res = await axios.get('http://localhost:5001/api/admin/products', getAuthHeader());
       setProducts(res.data);
     } catch (err) {
       setProducts([]);
@@ -45,7 +45,7 @@ const SetDiscount: React.FC = () => {
     setError('');
     try {
       await axios.put(
-        `http://localhost:5000/api/admin/products/${selectedProduct}/discount`,
+        `http://localhost:5001/api/admin/products/${selectedProduct}/discount`,
         { discount_percent: parseFloat(discount) },
         getAuthHeader()
       );

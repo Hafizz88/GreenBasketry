@@ -1,0 +1,946 @@
+schema_name,function_name,arguments,return_type,definition
+public,addresses_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.addresses_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Addresses table operation: % on address_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.address_id
+            ELSE NEW.address_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,applied_coupons_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.applied_coupons_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Applied coupons table operation: % on order_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.order_id
+            ELSE NEW.order_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,arrival_notifications_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.arrival_notifications_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Arrival notifications table operation: % on delivery_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.delivery_id
+            ELSE NEW.delivery_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,buy_history_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.buy_history_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Buy history table operation: % on customer_id % product_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.customer_id
+            ELSE NEW.customer_id
+        END,
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.product_id
+            ELSE NEW.product_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,cart_items_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.cart_items_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Cart items table operation: % on cart_id % product_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.cart_id
+            ELSE NEW.cart_id
+        END,
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.product_id
+            ELSE NEW.product_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,carts_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.carts_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Carts table operation: % on cart_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.cart_id
+            ELSE NEW.cart_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,coupons_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.coupons_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Coupons table operation: % on coupon_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.coupon_id
+            ELSE NEW.coupon_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,customers_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.customers_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Customers table operation: % on customer_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.customer_id
+            ELSE NEW.customer_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,delete_expired_coupons,,void,"CREATE OR REPLACE FUNCTION public.delete_expired_coupons()
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+  -- This function deletes all coupons where the 'valid_to' date is
+  -- earlier than the current date.
+  DELETE FROM coupons
+  WHERE valid_to < CURRENT_DATE;
+END;
+$function$
+"
+public,deliveries_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.deliveries_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Deliveries table operation: % on delivery_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.delivery_id
+            ELSE NEW.delivery_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,delivery_assignments_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.delivery_assignments_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Delivery assignments table operation: % on delivery_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.delivery_id
+            ELSE NEW.delivery_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,delivery_zones_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.delivery_zones_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Delivery zones table operation: % on zone_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.zone_id
+            ELSE NEW.zone_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,get_cart_summary_with_vouchers,p_customer_id integer,"TABLE(cart_id integer, subtotal numeric, total_vat numeric, total_discount numeric, grand_total numeric, delivery_fee numeric, active_coupon_code text, active_coupon_discount integer)","CREATE OR REPLACE FUNCTION public.get_cart_summary_with_vouchers(p_customer_id integer)
+ RETURNS TABLE(cart_id integer, subtotal numeric, total_vat numeric, total_discount numeric, grand_total numeric, delivery_fee numeric, active_coupon_code text, active_coupon_discount integer)
+ LANGUAGE plpgsql
+AS $function$DECLARE
+  v_cart_id INT;
+  v_subtotal NUMERIC := 0;
+  v_total_vat NUMERIC := 0;
+  v_total_discount NUMERIC := 0;
+  v_grand_total NUMERIC := 0;
+  v_delivery_fee NUMERIC := 0;
+  v_coupon_code TEXT;
+  v_coupon_discount INT;
+BEGIN
+  -- 1. Get active cart ID
+  SELECT c.cart_id INTO v_cart_id
+  FROM carts c
+  WHERE c.customer_id = p_customer_id AND c.is_active = true
+  LIMIT 1;
+
+  IF v_cart_id IS NULL THEN
+    RAISE EXCEPTION 'No active cart found for customer_id %', p_customer_id;
+  END IF;
+
+  -- 2. Compute subtotal, VAT, and discount
+  SELECT
+    COALESCE(SUM(p.price * ci.quantity), 0),
+    COALESCE(SUM((p.vat_percantage / 100.0) * (p.price * ci.quantity)), 0),
+    COALESCE(SUM((p.discount_percentage / 100.0) * (p.price * ci.quantity)), 0)
+  INTO v_subtotal, v_total_vat, v_total_discount
+  FROM cart_items ci
+  JOIN products p ON p.product_id = ci.product_id
+  WHERE ci.cart_id = v_cart_id;
+
+  v_grand_total := v_subtotal + v_total_vat - v_total_discount;
+
+  -- 3. Get delivery fee from customer's default address
+  SELECT dz.default_delivery_fee INTO v_delivery_fee
+  FROM addresses a
+  JOIN ""Thanas"" t ON a.thana_id = t.id
+  JOIN delivery_zones dz ON t.zone_id = dz.zone_id
+  WHERE a.customer_id = p_customer_id AND a.is_default = true
+  LIMIT 1;
+
+  -- 4. Get active coupon info
+  SELECT code, discount_percent
+  INTO v_coupon_code, v_coupon_discount
+  FROM coupons
+  WHERE is_active = true AND CURRENT_DATE BETWEEN valid_from AND valid_to
+  ORDER BY valid_from DESC
+  LIMIT 1;
+
+  -- 5. Return the results
+  RETURN QUERY SELECT
+    v_cart_id,
+    v_subtotal,
+    v_total_vat,
+    v_total_discount,
+    v_grand_total,
+    v_delivery_fee,
+    v_coupon_code,
+    v_coupon_discount;
+END;$function$
+"
+public,handle_cart_deactivation,,trigger,"CREATE OR REPLACE FUNCTION public.handle_cart_deactivation()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    -- When cart becomes inactive, we might want to keep stock reserved
+    -- OR restore it depending on your business logic
+    
+    -- If cart is deactivated without order (abandoned cart)
+    IF OLD.is_active = true AND NEW.is_active = false THEN
+        -- Check if this cart has an associated order
+        IF NOT EXISTS (SELECT 1 FROM orders WHERE cart_id = NEW.cart_id) THEN
+            -- Restore stock for abandoned cart
+            UPDATE products 
+            SET stock = stock + ci.quantity
+            FROM cart_items ci
+            WHERE ci.cart_id = NEW.cart_id 
+            AND products.product_id = ci.product_id;
+        END IF;
+    END IF;
+    
+    RETURN NEW;
+END;
+$function$
+"
+public,handle_order_placement,,trigger,"CREATE OR REPLACE FUNCTION public.handle_order_placement()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    -- When order is placed, stock is already reserved in cart
+    -- So we don't need to do anything here
+    -- Stock will be permanently committed when order is confirmed
+    
+    -- Optional: Update last_updated timestamp on products
+    UPDATE products 
+    SET last_updated = CURRENT_TIMESTAMP
+    FROM cart_items ci
+    WHERE ci.cart_id = NEW.cart_id 
+    AND products.product_id = ci.product_id;
+    
+    RETURN NEW;
+END;
+$function$
+"
+public,insert_customer_with_address,"p_name text, p_email text, p_password_hash text, p_phone text, p_address_line text, p_thana_id bigint, p_postal_code text, p_is_default boolean DEFAULT true","TABLE(customer_id integer, address_id integer)","CREATE OR REPLACE FUNCTION public.insert_customer_with_address(p_name text, p_email text, p_password_hash text, p_phone text, p_address_line text, p_thana_id bigint, p_postal_code text, p_is_default boolean DEFAULT true)
+ RETURNS TABLE(customer_id integer, address_id integer)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_zone_id INT;
+  v_cust_id INT;
+  v_address_id INT;
+BEGIN
+  -- Get zone_id
+  SELECT zone_id INTO v_zone_id FROM ""Thanas"" WHERE id = p_thana_id;
+  IF v_zone_id IS NULL THEN
+    RAISE EXCEPTION 'Invalid thana_id %: no zone found', p_thana_id;
+  END IF;
+  
+  -- Insert into customers
+  INSERT INTO customers(name, email, password_hash, phone)
+  VALUES (p_name, p_email, p_password_hash, p_phone)
+  RETURNING customers.customer_id INTO v_cust_id;
+  
+  -- Insert into addresses
+  INSERT INTO addresses(customer_id, address_line, thana_id, postal_code, zone_id, is_default)
+  VALUES (v_cust_id, p_address_line, p_thana_id, p_postal_code, v_zone_id, p_is_default)
+  RETURNING addresses.address_id INTO v_address_id;
+  
+  -- Return the result
+  RETURN QUERY SELECT v_cust_id, v_address_id;
+END;
+$function$
+"
+public,log_admin_change,"p_table_name character varying, p_record_id text, p_action_type character varying, p_field_name character varying DEFAULT NULL::character varying, p_old_value text DEFAULT NULL::text, p_new_value text DEFAULT NULL::text, p_admin_user_id text DEFAULT NULL::text, p_description character varying DEFAULT NULL::character varying",void,"CREATE OR REPLACE FUNCTION public.log_admin_change(p_table_name character varying, p_record_id text, p_action_type character varying, p_field_name character varying DEFAULT NULL::character varying, p_old_value text DEFAULT NULL::text, p_new_value text DEFAULT NULL::text, p_admin_user_id text DEFAULT NULL::text, p_description character varying DEFAULT NULL::character varying)
+ RETURNS void
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    INSERT INTO greenbasketary_admin_log (
+        log_id,
+        admin_user_id,
+        timestamp,
+        action_type,
+        table_name,
+        record_id,
+        field_name,
+        old_value,
+        new_value,
+        description
+        -- ip_address column removed
+    ) VALUES (
+        -- For INT: nextval('greenbasketary_admin_log_seq'),
+        -- For UUID: uuid_generate_v4(), -- Requires 'uuid-ossp' extension
+        gen_random_uuid(), -- PostgreSQL 13+ has built-in gen_random_uuid()
+        p_admin_user_id,
+        NOW(), -- PostgreSQL function for current timestamp
+        p_action_type,
+        p_table_name,
+        p_record_id,
+        p_field_name,
+        p_old_value,
+        p_new_value,
+        p_description
+        -- p_ip_address value removed
+    );
+
+EXCEPTION
+    WHEN OTHERS THEN
+        -- In PostgreSQL, you typically log errors to the database log
+        -- or use a separate logging mechanism if you need independent logging.
+        -- RAISE WARNING 'Error logging admin change: %', SQLERRM;
+        -- Or, for silent failure of logging:
+        NULL; -- Do nothing, just suppress the error
+END;
+$function$
+"
+public,orders_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.orders_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    -- Log the operation
+    RAISE NOTICE 'Orders table operation: % on order_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.order_id
+            ELSE NEW.order_id
+        END;
+    
+    -- Return appropriate record
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,products_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.products_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Products table operation: % on product_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.product_id
+            ELSE NEW.product_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,register_customer_with_address,"IN p_name text, IN p_email text, IN p_password_hash text, IN p_phone text, IN p_thana_name text, IN p_address_line text, IN p_postal_code character varying, IN p_is_default boolean DEFAULT false",null,"CREATE OR REPLACE PROCEDURE public.register_customer_with_address(IN p_name text, IN p_email text, IN p_password_hash text, IN p_phone text, IN p_thana_name text, IN p_address_line text, IN p_postal_code character varying, IN p_is_default boolean DEFAULT false)
+ LANGUAGE plpgsql
+AS $procedure$
+DECLARE
+    v_customer_id INTEGER;
+    v_thana_id BIGINT;
+BEGIN
+    -- Check if email already exists
+    IF EXISTS (SELECT 1 FROM customers WHERE email = p_email) THEN
+        RAISE EXCEPTION 'Email already registered';
+    END IF;
+
+    -- Insert into customers
+    INSERT INTO customers(name, email, password_hash, phone, points_earned, points_used)
+    VALUES (p_name, p_email, p_password_hash, p_phone, 0, 0)
+    RETURNING customer_id INTO v_customer_id;
+
+    -- Find thana_id from name (case-insensitive)
+    SELECT id INTO v_thana_id FROM ""Thanas""
+    WHERE LOWER(thana_name) = LOWER(p_thana_name)
+    LIMIT 1;
+
+    IF v_thana_id IS NULL THEN
+        RAISE EXCEPTION 'Invalid thana name: %', p_thana_name;
+    END IF;
+
+    -- Insert into addresses
+    INSERT INTO addresses(customer_id, thana_id, address_line, postal_code, is_default)
+    VALUES (v_customer_id, v_thana_id, p_address_line, p_postal_code, p_is_default);
+
+END;
+$procedure$
+"
+public,riders_trigger_function,,trigger,"CREATE OR REPLACE FUNCTION public.riders_trigger_function()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    RAISE NOTICE 'Riders table operation: % on rider_id %', TG_OP, 
+        CASE 
+            WHEN TG_OP = 'DELETE' THEN OLD.rider_id
+            ELSE NEW.rider_id
+        END;
+    
+    IF TG_OP = 'DELETE' THEN
+        RETURN OLD;
+    ELSE
+        RETURN NEW;
+    END IF;
+END;
+$function$
+"
+public,trg_coupons_after_delete_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_coupons_after_delete_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := 'UNKNOWN_ADMIN'; -- Placeholder (the deleting admin)
+
+    v_description := 'Coupon deleted: ' || OLD.code || ' (ID: ' || OLD.coupon_id || ').';
+
+    PERFORM log_admin_change(
+        'coupons',
+        OLD.coupon_id::TEXT,
+        'DELETE',
+        NULL,
+        TO_JSONB(OLD)::TEXT,
+        NULL,
+        v_admin_user_id,
+        v_description
+    );
+    RETURN OLD;
+END;
+$function$
+"
+public,trg_coupons_after_insert_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_coupons_after_insert_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := NEW.created_by_admin_id::TEXT; -- Directly use the admin who created it
+
+    v_description := 'New Coupon created: ' || NEW.code || ' (ID: ' || NEW.coupon_id || '). Discount: ' || NEW.discount_percent || '%.';
+
+    PERFORM log_admin_change(
+        'coupons',
+        NEW.coupon_id::TEXT,
+        'CREATE',
+        NULL,
+        NULL,
+        TO_JSONB(NEW)::TEXT,
+        v_admin_user_id,
+        v_description
+    );
+    RETURN NEW;
+END;
+$function$
+"
+public,trg_coupons_after_update_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_coupons_after_update_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := NEW.created_by_admin_id::TEXT; -- Use the admin who last updated it
+
+    IF OLD.code IS DISTINCT FROM NEW.code THEN
+        v_description := 'Coupon code updated for ID ' || NEW.coupon_id || ' from ""' || OLD.code || '"" to ""' || NEW.code || '"".';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'code',
+            OLD.code::TEXT,
+            NEW.code::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.description IS DISTINCT FROM NEW.description THEN
+        v_description := 'Coupon description updated for ID ' || NEW.coupon_id || '.';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'description',
+            OLD.description::TEXT,
+            NEW.description::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.discount_percent IS DISTINCT FROM NEW.discount_percent THEN
+        v_description := 'Coupon discount updated for ID ' || NEW.coupon_id || ' from ' || OLD.discount_percent || '% to ' || NEW.discount_percent || '%.';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'discount_percent',
+            OLD.discount_percent::TEXT,
+            NEW.discount_percent::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.valid_from IS DISTINCT FROM NEW.valid_from THEN
+        v_description := 'Coupon valid_from date updated for ID ' || NEW.coupon_id || ' from ' || OLD.valid_from::TEXT || ' to ' || NEW.valid_from::TEXT || '.';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'valid_from',
+            OLD.valid_from::TEXT,
+            NEW.valid_from::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.valid_to IS DISTINCT FROM NEW.valid_to THEN
+        v_description := 'Coupon valid_to date updated for ID ' || NEW.coupon_id || ' from ' || OLD.valid_to::TEXT || ' to ' || NEW.valid_to::TEXT || '.';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'valid_to',
+            OLD.valid_to::TEXT,
+            NEW.valid_to::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.is_active IS DISTINCT FROM NEW.is_active THEN
+        v_description := 'Coupon active status updated for ID ' || NEW.coupon_id || ' from ' || CASE WHEN OLD.is_active THEN 'Active' ELSE 'Inactive' END || ' to ' || CASE WHEN NEW.is_active THEN 'Active' ELSE 'Inactive' END || '.';
+        PERFORM log_admin_change(
+            'coupons',
+            NEW.coupon_id::TEXT,
+            'UPDATE',
+            'is_active',
+            OLD.is_active::TEXT,
+            NEW.is_active::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+    RETURN NEW;
+END;
+$function$
+"
+public,trg_products_after_delete_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_products_after_delete_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := 'UNKNOWN_ADMIN'; -- Placeholder (the deleting admin)
+
+    v_description := 'Product deleted: ' || OLD.name || ' (ID: ' || OLD.product_id || ').';
+
+    PERFORM log_admin_change(
+        'products',
+        OLD.product_id::TEXT,
+        'DELETE',
+        NULL,
+        TO_JSONB(OLD)::TEXT,
+        NULL,
+        v_admin_user_id,
+        v_description
+    );
+    RETURN OLD;
+END;
+$function$
+"
+public,trg_products_after_insert_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_products_after_insert_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := NEW.updated_by_admin_id::TEXT; -- Admin who created it
+
+    v_description := 'New Product created: ' || NEW.name || ' (ID: ' || NEW.product_id || '). Price: ' || NEW.price || ', Stock: ' || NEW.stock || '.';
+
+    PERFORM log_admin_change(
+        'products',
+        NEW.product_id::TEXT,
+        'CREATE',
+        NULL,
+        NULL,
+        TO_JSONB(NEW)::TEXT,
+        v_admin_user_id,
+        v_description
+    );
+    RETURN NEW;
+END;
+$function$
+"
+public,trg_products_after_update_func,,trigger,"CREATE OR REPLACE FUNCTION public.trg_products_after_update_func()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+    v_admin_user_id TEXT;
+    v_description   VARCHAR;
+BEGIN
+    v_admin_user_id := NEW.updated_by_admin_id::TEXT; -- Admin who last updated it
+
+    IF OLD.name IS DISTINCT FROM NEW.name THEN
+        v_description := 'Product name updated for ID ' || NEW.product_id || ' from ""' || OLD.name || '"" to ""' || NEW.name || '"".';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'name',
+            OLD.name::TEXT,
+            NEW.name::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.category IS DISTINCT FROM NEW.category THEN
+        v_description := 'Product category updated for ID ' || NEW.product_id || ' from ""' || OLD.category || '"" to ""' || NEW.category || '"".';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'category',
+            OLD.category::TEXT,
+            NEW.category::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.price IS DISTINCT FROM NEW.price THEN
+        v_description := 'Product price updated for ID ' || NEW.product_id || ' from ' || OLD.price || ' to ' || NEW.price || '.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'price',
+            OLD.price::TEXT,
+            NEW.price::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.stock IS DISTINCT FROM NEW.stock THEN
+        v_description := 'Product stock updated for ID ' || NEW.product_id || ' from ' || OLD.stock || ' to ' || NEW.stock || '.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'stock',
+            OLD.stock::TEXT,
+            NEW.stock::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.vat_percantage IS DISTINCT FROM NEW.vat_percantage THEN
+        v_description := 'Product VAT percentage updated for ID ' || NEW.product_id || ' from ' || OLD.vat_percantage || '% to ' || NEW.vat_percantage || '%.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'vat_percantage',
+            OLD.vat_percantage::TEXT,
+            NEW.vat_percantage::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.discount_percentage IS DISTINCT FROM NEW.discount_percentage THEN
+        v_description := 'Product discount percentage updated for ID ' || NEW.product_id || ' from ' || OLD.discount_percentage || '% to ' || NEW.discount_percentage || '%.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'discount_percentage',
+            OLD.discount_percentage::TEXT,
+            NEW.discount_percentage::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.discount_started IS DISTINCT FROM NEW.discount_started THEN
+        v_description := 'Product discount start date updated for ID ' || NEW.product_id || ' from ' || OLD.discount_started::TEXT || ' to ' || NEW.discount_started::TEXT || '.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'discount_started',
+            OLD.discount_started::TEXT,
+            NEW.discount_started::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.discount_finished IS DISTINCT FROM NEW.discount_finished THEN
+        v_description := 'Product discount finish date updated for ID ' || NEW.product_id || ' from ' || OLD.discount_finished::TEXT || ' to ' || NEW.discount_finished::TEXT || '.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'discount_finished',
+            OLD.discount_finished::TEXT,
+            NEW.discount_finished::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+
+    IF OLD.points_rewarded IS DISTINCT FROM NEW.points_rewarded THEN
+        v_description := 'Product points rewarded updated for ID ' || NEW.product_id || ' from ' || OLD.points_rewarded || ' to ' || NEW.points_rewarded || '.';
+        PERFORM log_admin_change(
+            'products',
+            NEW.product_id::TEXT,
+            'UPDATE',
+            'points_rewarded',
+            OLD.points_rewarded::TEXT,
+            NEW.points_rewarded::TEXT,
+            v_admin_user_id,
+            v_description
+        );
+    END IF;
+    RETURN NEW;
+END;
+$function$
+"
+public,update_product_stock,,trigger,"CREATE OR REPLACE FUNCTION public.update_product_stock()
+ RETURNS trigger
+ LANGUAGE plpgsql
+AS $function$
+BEGIN
+    -- Handle INSERT (adding items to cart)
+    IF TG_OP = 'INSERT' THEN
+        -- Check if enough stock is available
+        IF (SELECT stock FROM products WHERE product_id = NEW.product_id) < NEW.quantity THEN
+            RAISE EXCEPTION 'Insufficient stock. Available: %, Requested: %', 
+                (SELECT stock FROM products WHERE product_id = NEW.product_id), NEW.quantity;
+        END IF;
+        
+        -- Decrease stock
+        UPDATE products 
+        SET stock = stock - NEW.quantity 
+        WHERE product_id = NEW.product_id;
+        
+        RETURN NEW;
+    END IF;
+    
+    -- Handle UPDATE (changing quantity in cart)
+    IF TG_OP = 'UPDATE' THEN
+        DECLARE
+            quantity_diff INTEGER;
+            available_stock INTEGER;
+        BEGIN
+            quantity_diff := NEW.quantity - OLD.quantity;
+            
+            -- If quantity increased, check stock availability
+            IF quantity_diff > 0 THEN
+                SELECT stock INTO available_stock FROM products WHERE product_id = NEW.product_id;
+                IF available_stock < quantity_diff THEN
+                    RAISE EXCEPTION 'Insufficient stock. Available: %, Additional requested: %', 
+                        available_stock, quantity_diff;
+                END IF;
+            END IF;
+            
+            -- Update stock (negative quantity_diff will increase stock)
+            UPDATE products 
+            SET stock = stock - quantity_diff 
+            WHERE product_id = NEW.product_id;
+            
+            RETURN NEW;
+        END;
+    END IF;
+    
+    -- Handle DELETE (removing items from cart)
+    IF TG_OP = 'DELETE' THEN
+        -- Restore stock
+        UPDATE products 
+        SET stock = stock + OLD.quantity 
+        WHERE product_id = OLD.product_id;
+        
+        RETURN OLD;
+    END IF;
+    
+    RETURN NULL;
+END;
+$function$
+"
+public,upsert_customer_address,"p_customer_id integer, p_address_line text, p_thana_name text, p_postal_code text","TABLE(out_address_id integer, message text)","CREATE OR REPLACE FUNCTION public.upsert_customer_address(p_customer_id integer, p_address_line text, p_thana_name text, p_postal_code text)
+ RETURNS TABLE(out_address_id integer, message text)
+ LANGUAGE plpgsql
+AS $function$
+DECLARE
+  v_thana_id INT;
+  v_zone_id INT;
+  v_existing_id INT;
+BEGIN
+  -- Get thana and corresponding zone
+  SELECT id, zone_id INTO v_thana_id, v_zone_id
+  FROM ""Thanas""
+  WHERE thana_name = p_thana_name;
+
+  IF NOT FOUND THEN
+    RAISE EXCEPTION 'Invalid thana name %', p_thana_name;
+  END IF;
+
+  -- Check if address already exists
+  SELECT a.address_id INTO v_existing_id
+  FROM addresses a
+  WHERE a.customer_id = p_customer_id;
+
+  IF FOUND THEN
+    UPDATE addresses
+    SET address_line = p_address_line,
+        thana_id = v_thana_id,
+        zone_id = v_zone_id,
+        postal_code = p_postal_code
+    WHERE address_id = v_existing_id;
+
+    RETURN QUERY SELECT v_existing_id, 'Address updated';
+  ELSE
+    INSERT INTO addresses (customer_id, address_line, thana_id, postal_code, zone_id)
+    VALUES (p_customer_id, p_address_line, v_thana_id, p_postal_code, v_zone_id)
+    RETURNING address_id INTO v_existing_id;
+
+    RETURN QUERY SELECT v_existing_id, 'Address inserted';
+  END IF;
+END;
+$function$
+"

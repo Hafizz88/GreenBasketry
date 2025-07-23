@@ -14,6 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.png';
 import heroImage from '@/assets/hero-grocery.jpg';
+import { io as socketIOClient, Socket } from 'socket.io-client';
 
 interface Product {
   product_id?: number;
@@ -87,7 +88,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products/categories', getAuthHeader());
+        const response = await axios.get('http://localhost:5001/api/products/categories', getAuthHeader());
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -101,7 +102,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   useEffect(() => {
     const fetchTopSellingProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products/top-selling?limit=8', getAuthHeader());
+        const response = await axios.get('http://localhost:5001/api/products/top-selling?limit=8', getAuthHeader());
         setTopSellingProducts(response.data);
       } catch (error) {
         console.error('Error fetching top selling products:', error);
@@ -117,7 +118,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
       const fetchProducts = async () => {
         try {
           setLoading(true);
-          const response = await axios.get(`http://localhost:5000/api/products/category/${selectedCategory}`, getAuthHeader());
+          const response = await axios.get(`http://localhost:5001/api/products/category/${selectedCategory}`, getAuthHeader());
           setProducts(response.data);
         } catch (error) {
           console.error('Error fetching products:', error);
@@ -141,7 +142,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
 
         try {
           setLoading(true);
-          const response = await axios.get(`http://localhost:5000/api/products/search?name=${searchTerm}`, getAuthHeader());
+          const response = await axios.get(`http://localhost:5001/api/products/search?name=${searchTerm}`, getAuthHeader());
           setSearchResults(response.data);
         } catch (error) {
           console.error('Error fetching search results:', error);
@@ -155,6 +156,39 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
 
     return () => clearTimeout(delayDebounce);
   }, [searchTerm]);
+
+  // Real-time notifications via socket.io
+  useEffect(() => {
+    const socket: Socket = socketIOClient('http://localhost:5001');
+    const customerId = localStorage.getItem('userId');
+    if (customerId) {
+      socket.emit('joinCustomerRoom', customerId);
+    }
+    socket.on('orderAccepted', (data) => {
+      toast({
+        title: 'Order Accepted',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    socket.on('riderArrived', (data) => {
+      toast({
+        title: 'Rider Arrived',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    socket.on('paymentConfirmed', (data) => {
+      toast({
+        title: 'Delivery Complete! 🎉',
+        description: data.message,
+        variant: 'default',
+      });
+    });
+    return () => {
+      socket.disconnect();
+    };
+  }, [toast]);
 
   const handleAddToCart = async (productId: number) => {
     if (!isLoggedIn()) {
@@ -177,7 +211,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
         quantity: 1,
       };
 
-      await axios.post('http://localhost:5000/api/cart', payload, getAuthHeader());
+      await axios.post('http://localhost:5001/api/cart', payload, getAuthHeader());
       toast({
         title: "Added to Cart!",
         description: "Item has been added to your cart successfully.",
@@ -207,7 +241,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
       const storedCustomerId = localStorage.getItem('userId');
       const customerId = parseInt(storedCustomerId || '0', 10);
 
-      await axios.post('http://localhost:5000/api/wishlist', {
+      await axios.post('http://localhost:5001/api/wishlist', {
         customer_id: customerId,
         product_id: productId
       }, getAuthHeader());
@@ -467,55 +501,57 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
                     className="group hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0 bg-gradient-card overflow-hidden"
                   >
                     <CardContent className="p-0">
-                      {/* Product Image */}
-                      <div className="relative overflow-hidden">
+                      {/* Product Image (clickable) */}
+                      <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${product.product_id || product.id}`)}>
                         <img
                           src={product.image?.url || product.image_url || product.thumbnail || '/placeholder.svg'}
                           alt={product.name || product.title || 'Product'}
                           className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
                         />
-                        
                         {/* Top Selling Badge */}
                         {activeTab === 'top-selling' && product.total_times_purchased && (
                           <Badge className="absolute top-2 left-2 bg-gradient-primary text-primary-foreground">
                             🔥 {product.total_times_purchased} sold
                           </Badge>
                         )}
-
                         {/* Wishlist Button */}
                         <Button
                           variant="wishlist"
                           size="icon"
-                          onClick={() => handleAddToWishlist(product.product_id || product.id || 0)}
+                          onClick={(e) => { e.stopPropagation(); handleAddToWishlist(product.product_id || product.id || 0); }}
                           className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
                           <Heart className="h-4 w-4" />
                         </Button>
                       </div>
-
-                      {/* Product Info */}
-                      <div className="p-4 space-y-3">
-                        <h3 className="font-semibold text-foreground line-clamp-2">
-                          {product.name || product.title || 'No Title'}
-                        </h3>
-                        
-                        <div className="flex items-center justify-between">
-                          <span className="text-2xl font-bold text-primary">
-                            ৳{product.price || 'N/A'}
-                          </span>
-                          
-                          {/* Add to Cart Button */}
-                          <Button
-                            variant="cart"
-                            size="sm"
-                            onClick={() => handleAddToCart(product.product_id || product.id || 0)}
-                            className="text-xs px-3"
-                          >
-                            <Plus className="h-3 w-3 mr-1" />
-                            Add
-                          </Button>
-                        </div>
+                      {/* Product Info (name clickable) */}
+                      <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer" onClick={() => navigate(`/product/${product.product_id || product.id}`)}>
+                        {product.name || product.title || 'No Title'}
+                      </h3>
+                      <div className="flex items-center justify-between">
+                        <span className="text-2xl font-bold text-primary">
+                          ৳{product.price || 'N/A'}
+                        </span>
+                        {/* Add to Cart Button */}
+                        <Button
+                          variant="cart"
+                          size="sm"
+                          onClick={() => handleAddToCart(product.product_id || product.id || 0)}
+                          className="text-xs px-3"
+                        >
+                          <Plus className="h-3 w-3 mr-1" />
+                          Add
+                        </Button>
                       </div>
+                      {/* Details Button */}
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2 w-full"
+                        onClick={() => navigate(`/product/${product.product_id || product.id}`)}
+                      >
+                        Details
+                      </Button>
                     </CardContent>
                   </Card>
                 ))}

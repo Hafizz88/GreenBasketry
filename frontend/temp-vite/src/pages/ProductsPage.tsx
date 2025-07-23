@@ -39,7 +39,7 @@ const ProductsPage = () => {
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products', getAuthHeader());
+        const response = await axios.get('http://localhost:5001/api/products', getAuthHeader());
         setProducts(response.data);  // Store fetched products
       } catch (err) {
         console.error('Failed to load products', err);
@@ -80,7 +80,7 @@ const ProductsPage = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/cart', {
+      await axios.post('http://localhost:5001/api/cart', {
         customer_id: customerId,
         product_id: productId,
         quantity: 1
@@ -115,7 +115,7 @@ const ProductsPage = () => {
       const storedCustomerId = localStorage.getItem('userId');
       const customerId = parseInt(storedCustomerId || '0', 10);
 
-      await axios.post('http://localhost:5000/api/wishlist', {
+      await axios.post('http://localhost:5001/api/wishlist', {
         customer_id: customerId,
         product_id: productId
       }, getAuthHeader());
@@ -199,6 +199,12 @@ const ProductsPage = () => {
                     </Badge>
                     <span className="text-sm text-muted-foreground">
                       {product.stock > 0 ? `${product.stock} in stock` : 'Out of stock'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-medium text-muted-foreground">Stock:</span>
+                    <span className={product.stock > 0 ? "text-success font-semibold" : "text-destructive font-semibold"}>
+                      {product.stock}
                     </span>
                   </div>
 

@@ -99,7 +99,7 @@ const getTopSellingProducts = async (req, res) => {
         p.category,
         p.stock,
         p.description,
-        p.vat_percantage,
+        p.vat_percentage,
         p.discount_percentage,
         p.discount_started,
         p.discount_finished,
@@ -109,12 +109,12 @@ const getTopSellingProducts = async (req, res) => {
         SUM(bh.times_purchased * p.price) as total_revenue,
         MAX(bh.last_purchased) as last_sold_date
       FROM products p
-      INNER JOIN buy_history bh ON p.product_id = bh.product_id
+      LEFT JOIN buy_history bh ON p.product_id = bh.product_id
       WHERE p.stock > 0 
       GROUP BY p.product_id, p.name, p.price, p.image_url, p.category, p.stock, 
-               p.description, p.vat_percantage, p.discount_percentage, 
+               p.description, p.vat_percentage, p.discount_percentage, 
                p.discount_started, p.discount_finished, p.points_rewarded
-      ORDER BY total_times_purchased DESC, total_customers DESC
+      ORDER BY total_times_purchased DESC NULLS LAST, total_customers DESC NULLS LAST
       LIMIT $1`,
       [parseInt(limit)]
     );
@@ -142,7 +142,7 @@ const getTopSellingByCategory = async (req, res) => {
         p.category,
         p.stock,
         p.description,
-        p.vat_percantage,
+        p.vat_percentage,
         p.discount_percentage,
         p.discount_started,
         p.discount_finished,
@@ -156,7 +156,7 @@ const getTopSellingByCategory = async (req, res) => {
       WHERE p.stock > 0 
         AND p.category = $1
       GROUP BY p.product_id, p.name, p.price, p.image_url, p.category, p.stock, 
-               p.description, p.vat_percantage, p.discount_percentage, 
+               p.description, p.vat_percentage, p.discount_percentage, 
                p.discount_started, p.discount_finished, p.points_rewarded
       ORDER BY total_times_purchased DESC, total_customers DESC
       LIMIT $2`,
@@ -171,6 +171,31 @@ const getTopSellingByCategory = async (req, res) => {
   }
 };
 
+// Get product details by ID
+const getProductDetails = async (req, res) => {
+  const { id } = req.params;
+  try {
+    // Fetch product info
+    const productRes = await client.query(
+      `SELECT product_id, name, category, price, stock, description, image_url, discount_percentage, vat_percentage, created_at, last_updated
+       FROM products WHERE product_id = $1`,
+      [id]
+    );
+    if (productRes.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    // Placeholder for reviews (future)
+    // const reviewsRes = await client.query('SELECT ... FROM product_reviews WHERE product_id = $1', [id]);
+    res.status(200).json({
+      ...productRes.rows[0],
+      reviews: [] // Placeholder for future reviews
+    });
+  } catch (error) {
+    console.error('Error fetching product details:', error);
+    res.status(500).json({ error: 'Failed to fetch product details' });
+  }
+};
+
 export { 
   getAllProducts, 
   getAllCategories, 
@@ -178,5 +203,6 @@ export {
   SearchProductByname,
   getTopSellingProducts,
   getTopSellingByCategory,
-  createProduct // Make sure to export createProduct
+  createProduct, // Make sure to export createProduct
+  getProductDetails // Add the new function to the export
 };

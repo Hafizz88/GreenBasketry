@@ -63,7 +63,7 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
         setError(null);
         console.log("🔄 Fetching thanas...");
         
-        const res = await fetch('http://localhost:5000/api/thanas');
+        const res = await fetch('http://localhost:5001/api/thanas');
         console.log("📡 Response status:", res.status);
         console.log("📡 Response ok:", res.ok);
         
@@ -137,7 +137,7 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
     }
 
     try {
-      const res = await fetch('http://localhost:5000/api/auth/signup', {
+      const res = await fetch('http://localhost:5001/api/auth/signup', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),

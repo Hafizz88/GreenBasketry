@@ -6,6 +6,9 @@ interface ProductForm {
   category: string;
   price: string;
   stock: string;
+  description: string;
+  discount_percentage: string;
+  vat_percentage: string;
 }
 
 const getAuthHeader = () => {
@@ -13,7 +16,7 @@ const getAuthHeader = () => {
   return {
     headers: {
       Authorization: `Bearer ${token}`,
-      'Content-Type': 'application/json',
+      'Content-Type': 'multipart/form-data',
     },
   };
 };
@@ -24,13 +27,45 @@ const AddProduct: React.FC = () => {
     category: '',
     price: '',
     stock: '',
+    description: '',
+    discount_percentage: '',
+    vat_percentage: '',
   });
+  const [selectedImage, setSelectedImage] = useState<File | null>(null);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith('image/')) {
+        setError('Please select a valid image file (JPG, PNG, GIF)');
+        return;
+      }
+      
+      // Validate file size (5MB limit)
+      if (file.size > 5 * 1024 * 1024) {
+        setError('Image size should be less than 5MB');
+        return;
+      }
+
+      setSelectedImage(file);
+      setError('');
+      
+      // Create preview
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        setImagePreview(e.target?.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -38,38 +73,230 @@ const AddProduct: React.FC = () => {
     setLoading(true);
     setSuccess('');
     setError('');
+
+    if (!selectedImage) {
+      setError('Please select an image for the product');
+      setLoading(false);
+      return;
+    }
+
     try {
+      const formData = new FormData();
+      formData.append('name', form.name);
+      formData.append('category', form.category);
+      formData.append('price', form.price);
+      formData.append('stock', form.stock);
+      formData.append('description', form.description);
+      formData.append('discount_percentage', form.discount_percentage);
+      formData.append('vat_percentage', form.vat_percentage);
+      formData.append('image', selectedImage);
+
       await axios.post(
-        'http://localhost:5000/api/admin/products',
-        {
-          name: form.name,
-          category: form.category,
-          price: parseFloat(form.price),
-          stock: parseInt(form.stock, 10),
-        },
+        'http://localhost:5001/api/admin/add-product',
+        formData,
         getAuthHeader()
       );
+      
       setSuccess('Product added successfully!');
-      setForm({ name: '', category: '', price: '', stock: '' });
-    } catch (err) {
-      setError('Failed to add product');
+      setForm({ 
+        name: '', 
+        category: '', 
+        price: '', 
+        stock: '', 
+        description: '', 
+        discount_percentage: '', 
+        vat_percentage: '' 
+      });
+      setSelectedImage(null);
+      setImagePreview(null);
+      
+      // Reset file input
+      const fileInput = document.getElementById('image-input') as HTMLInputElement;
+      if (fileInput) fileInput.value = '';
+      
+    } catch (err: any) {
+      setError(err.response?.data?.error || 'Failed to add product');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div style={{ maxWidth: 500, margin: 'auto' }}>
-      <h2>Add New Product</h2>
-      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-        <input name="name" placeholder="Product Name" value={form.name} onChange={handleChange} required />
-        <input name="category" placeholder="Category" value={form.category} onChange={handleChange} required />
-        <input name="price" type="number" placeholder="Price" value={form.price} onChange={handleChange} required />
-        <input name="stock" type="number" placeholder="Stock" value={form.stock} onChange={handleChange} required />
-        <button type="submit" disabled={loading}>{loading ? 'Adding...' : 'Add Product'}</button>
+    <div style={{ maxWidth: 600, margin: 'auto', padding: '20px' }}>
+      <h2 style={{ textAlign: 'center', marginBottom: '30px', color: '#333' }}>
+        Add New Product
+      </h2>
+      
+      <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Product Name *</label>
+          <input 
+            name="name" 
+            placeholder="Enter product name" 
+            value={form.name} 
+            onChange={handleChange} 
+            required 
+            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+          />
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Category *</label>
+          <input 
+            name="category" 
+            placeholder="Enter category (e.g., Electronics, Clothing)" 
+            value={form.category} 
+            onChange={handleChange} 
+            required 
+            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Price *</label>
+            <input 
+              name="price" 
+              type="number" 
+              step="0.01"
+              placeholder="0.00" 
+              value={form.price} 
+              onChange={handleChange} 
+              required 
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Stock *</label>
+            <input 
+              name="stock" 
+              type="number" 
+              placeholder="0" 
+              value={form.stock} 
+              onChange={handleChange} 
+              required 
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Description *</label>
+          <textarea 
+            name="description" 
+            placeholder="Enter product description" 
+            value={form.description} 
+            onChange={handleChange} 
+            required 
+            rows={4}
+            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd', resize: 'vertical' }}
+          />
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Discount %</label>
+            <input 
+              name="discount_percentage" 
+              type="number" 
+              step="0.01"
+              placeholder="0.00" 
+              value={form.discount_percentage} 
+              onChange={handleChange} 
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>VAT %</label>
+            <input 
+              name="vat_percentage" 
+              type="number" 
+              step="0.01"
+              placeholder="0.00" 
+              value={form.vat_percentage} 
+              onChange={handleChange} 
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Product Image *</label>
+          <input 
+            id="image-input"
+            name="image" 
+            type="file" 
+            accept="image/*"
+            onChange={handleImageChange} 
+            required 
+            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+          />
+          <p style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+            Supported formats: JPG, PNG, GIF. Max size: 5MB
+          </p>
+        </div>
+
+        {imagePreview && (
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Image Preview:</label>
+            <img 
+              src={imagePreview} 
+              alt="Preview" 
+              style={{ 
+                maxWidth: '200px', 
+                maxHeight: '200px', 
+                borderRadius: 8, 
+                border: '2px solid #ddd',
+                objectFit: 'cover'
+              }} 
+            />
+          </div>
+        )}
+
+        <button 
+          type="submit" 
+          disabled={loading}
+          style={{ 
+            padding: 16, 
+            borderRadius: 8, 
+            border: 'none', 
+            background: loading ? '#ccc' : '#00796b', 
+            color: 'white', 
+            fontWeight: 600, 
+            fontSize: 16,
+            cursor: loading ? 'not-allowed' : 'pointer',
+            marginTop: 16
+          }}
+        >
+          {loading ? 'Adding Product...' : 'Add Product'}
+        </button>
       </form>
-      {success && <p style={{ color: 'green' }}>{success}</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      
+      {success && (
+        <div style={{ 
+          background: '#d4edda', 
+          color: '#155724', 
+          padding: 12, 
+          borderRadius: 8, 
+          marginTop: 16, 
+          border: '1px solid #c3e6cb' 
+        }}>
+          {success}
+        </div>
+      )}
+      
+      {error && (
+        <div style={{ 
+          background: '#f8d7da', 
+          color: '#721c24', 
+          padding: 12, 
+          borderRadius: 8, 
+          marginTop: 16, 
+          border: '1px solid #f5c6cb' 
+        }}>
+          {error}
+        </div>
+      )}
     </div>
   );
 };

@@ -11,11 +11,12 @@ import {
   updateCoupon
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifytoken.js';
+import { upload } from '../controllers/cloudinaryController.js';
 
 const router = express.Router();
 
-// Route to add a new product
-router.post('/add-product', verifyToken, addProduct);
+// Route to add a new product with image upload
+router.post('/add-product', verifyToken, upload.single('image'), addProduct);
 
 // Route to update product price
 router.put('/update-product-price', verifyToken, updateProductPrice);

@@ -67,7 +67,7 @@ const VoucherSummaryPage = () => {
         }
 
         const response = await axios.get(
-          `http://localhost:5000/api/vouchers/${customerId}`,
+          `http://localhost:5001/api/vouchers/${customerId}`,
           authHeader
         );
         
@@ -141,7 +141,7 @@ const VoucherSummaryPage = () => {
       }
 
       const response = await axios.post(
-        'http://localhost:5000/api/orders/place',
+        'http://localhost:5001/api/orders/place',
         orderData,
         authHeader
       );

@@ -101,7 +101,7 @@ const RiderHome: React.FC = () => {
 
   const fetchRiderData = async (riderId: number) => {
     try {
-      const assignmentsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/current-assignments`, {
+      const assignmentsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/current-assignments`, {
         headers: getAuthHeaders()
       });
       if (assignmentsResponse.ok) {
@@ -109,7 +109,7 @@ const RiderHome: React.FC = () => {
         setCurrentAssignments(assignments);
       }
       
-      const notificationsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/notifications`, {
+      const notificationsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/notifications`, {
         headers: getAuthHeaders()
       });
       if (notificationsResponse.ok) {
@@ -135,7 +135,7 @@ const RiderHome: React.FC = () => {
     try {
       console.log('Fetching available orders for:', { riderId: rider.rider_id, zone: currentZone });
       const response = await fetch(
-        `http://localhost:5000/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(currentZone)}`,
+        `http://localhost:5001/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(currentZone)}`,
         { headers: getAuthHeaders() }
       );
       if (response.ok) {
@@ -166,7 +166,7 @@ const RiderHome: React.FC = () => {
     if (!location || !rider?.rider_id) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/location`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/location`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -222,7 +222,7 @@ const RiderHome: React.FC = () => {
     if (!rider?.rider_id) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/accept-order`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/accept-order`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ deliveryId })
@@ -235,6 +235,49 @@ const RiderHome: React.FC = () => {
       }
     } catch (error) {
       console.error('Error accepting order:', error);
+    }
+  };
+
+  // Add markArrival function
+  const markArrival = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/arrival`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Arrival marked successfully!');
+        fetchRiderData(rider.rider_id);
+      } else {
+        const error = await response.json();
+        alert('Failed to mark arrival: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error marking arrival:', error);
+      alert('Error marking arrival.');
+    }
+  };
+
+  // Add confirmPayment function
+  const confirmPayment = async (orderId: number) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/order/${orderId}/confirm-payment`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ paymentMethod: 'cash' }) // or allow selection
+      });
+      if (response.ok) {
+        alert('Payment confirmed and delivery completed!');
+        if (rider?.rider_id) fetchRiderData(rider.rider_id);
+      } else {
+        const error = await response.json();
+        alert('Failed to confirm payment: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error confirming payment:', error);
+      alert('Error confirming payment.');
     }
   };
 
@@ -260,7 +303,7 @@ const RiderHome: React.FC = () => {
   const toggleAvailability = async () => {
     if (!rider?.rider_id) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/availability`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/availability`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ available: !rider.available })
@@ -394,6 +437,46 @@ const RiderHome: React.FC = () => {
                       <div>Customer: {a.customer_name}</div>
                       <div>Address: {a.address_line}</div>
                       <div>Amount: ৳{a.total_amount}</div>
+                      {/* Action Buttons: Arrived or Confirm Payment */}
+                      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                        {a.delivery_status !== 'out_for_delivery' ? (
+                          <button
+                            onClick={() => markArrival(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #43cea233',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            🚚 Mark Arrived
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => confirmPayment(a.order_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
+                              color: '#333',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #ffd20033',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            💰 Confirm Payment
+                          </button>
+                        )}
+                      </div>
                     </li>
                   ))}
                 </ul>

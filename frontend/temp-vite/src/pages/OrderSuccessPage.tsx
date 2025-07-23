@@ -125,7 +125,7 @@ const OrderSuccessPage = () => {
           
           <Button 
             variant="outline"
-            onClick={() => navigate('/products')}
+            onClick={() => navigate('/home')}
             className="w-full sm:w-auto"
           >
             Continue Shopping

@@ -14,5 +14,5 @@ router.post('/admin/login',  adminLogin);
 // POST /api/auth/login
 router.post('/login', login);
 
-export default router; // ✅ Export default for ES module compatibility
+export default router; 
 
