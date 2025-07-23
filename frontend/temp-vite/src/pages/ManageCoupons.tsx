@@ -36,7 +36,7 @@ const ManageCoupons: React.FC = () => {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5000/api/admin/coupons', getAuthHeader());
+      const res = await axios.get('http://localhost:5001/api/admin/coupons', getAuthHeader());
       setCoupons(res.data);
       setError('');
     } catch (err) {
@@ -64,12 +64,12 @@ const ManageCoupons: React.FC = () => {
     try {
       if (editingId) {
         await axios.put(
-          `http://localhost:5000/api/admin/coupons/${editingId}`,
+          `http://localhost:5001/api/admin/coupons/${editingId}`,
           body,
           getAuthHeader()
         );
       } else {
-        await axios.post('http://localhost:5000/api/admin/create-coupon', body, getAuthHeader());
+        await axios.post('http://localhost:5001/api/admin/create-coupon', body, getAuthHeader());
       }
       await fetchCoupons();
       resetForm();
@@ -103,7 +103,7 @@ const ManageCoupons: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Are you sure you want to delete this coupon?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/admin/coupons/${id}`, getAuthHeader());
+      await axios.delete(`http://localhost:5001/api/admin/coupons/${id}`, getAuthHeader());
       await fetchCoupons();
     } catch (err) {
       alert('Failed to delete coupon');

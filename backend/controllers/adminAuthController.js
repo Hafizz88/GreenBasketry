@@ -40,9 +40,10 @@ const adminLogin = async (req, res) => {
       message: 'Admin login successful', 
       token,
       user: {
-        admin_id: admin.admin_id  // Your frontend looks for user.admin_id
+        admin_id: admin.admin_id
       },
-      userId: admin.admin_id  // Your frontend also stores this
+      userId: admin.admin_id,
+      role: 'admin'
     });
   } catch (err) {
     console.error('❌ Admin Login Error:', err.stack || err.message || err);

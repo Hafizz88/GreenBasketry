@@ -58,20 +58,20 @@ function CustomerProfile() {
         console.log('Auth header:', authHeader);
 
         // Fetch customer data
-        const customerRes = await axios.get(`http://localhost:5000/api/customers/${customerId}`, authHeader);
+        const customerRes = await axios.get(`http://localhost:5001/api/customers/${customerId}`, authHeader);
         setCustomer(customerRes.data);
 
         // Fetch addresses
-        const addressRes = await axios.get(`http://localhost:5000/api/customers/${customerId}/addresses`, authHeader);
+        const addressRes = await axios.get(`http://localhost:5001/api/customers/${customerId}/addresses`, authHeader);
         setAddresses(addressRes.data);
 
         // Fetch wishlist
-        const wishlistRes = await axios.get(`http://localhost:5000/api/wishlist?customer_id=${customerId}`, authHeader);
+        const wishlistRes = await axios.get(`http://localhost:5001/api/wishlist?customer_id=${customerId}`, authHeader);
         setWishlist(wishlistRes.data);
 
         // Fetch thanas with detailed logging
         console.log('Fetching thanas...');
-        const thanasRes = await axios.get('http://localhost:5000/api/thanas', authHeader);
+        const thanasRes = await axios.get('http://localhost:5001/api/thanas', authHeader);
         console.log('Thanas response:', thanasRes.data);
         
         // Check the structure of the response
@@ -125,7 +125,7 @@ function CustomerProfile() {
         return;
       }
 
-      await axios.delete(`http://localhost:5000/api/wishlist`, {
+      await axios.delete(`http://localhost:5001/api/wishlist`, {
         ...authHeader,
         data: {
           customer_id: customerId,
@@ -172,7 +172,7 @@ function CustomerProfile() {
 
       const { address_line, thana_name, postal_code } = newAddress;
 
-      const response = await axios.post(`http://localhost:5000/api/customers/${customerId}/addresses`, {
+      const response = await axios.post(`http://localhost:5001/api/customers/${customerId}/addresses`, {
         customer_id: customerId,
         address_line: address_line.trim(),
         thana_name: thana_name.trim(),

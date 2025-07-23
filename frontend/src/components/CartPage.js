@@ -22,7 +22,7 @@ function CartPage() {
 
   const fetchCart = async () => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/cart`, {
+      const response = await axios.get(`http://localhost:5001/api/cart`, {
         ...getAuthHeader(),
         params: { customer_id: customerId }
       });
@@ -50,7 +50,7 @@ function CartPage() {
   const handleAddToCart = async (productId) => {
     try {
       await axios.post(
-        `http://localhost:5000/api/cart`,
+        `http://localhost:5001/api/cart`,
         {
           customer_id: customerId,
           product_id: productId,
@@ -67,7 +67,7 @@ function CartPage() {
 
   const handleRemoveFromCart = async (productId) => {
     try {
-      await axios.delete(`http://localhost:5000/api/cart`, {
+      await axios.delete(`http://localhost:5001/api/cart`, {
         ...getAuthHeader(),
         data: {
           customer_id: customerId,
@@ -84,7 +84,7 @@ function CartPage() {
   const handleUpdateCartItem = async (productId, newQuantity) => {
     try {
       await axios.put(
-        `http://localhost:5000/api/cart`,
+        `http://localhost:5001/api/cart`,
         {
           customer_id: customerId,
           product_id: productId,

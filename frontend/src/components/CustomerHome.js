@@ -83,7 +83,7 @@ function CustomerHome() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products/categories', getAuthHeader());
+        const response = await axios.get('http://localhost:5001/api/products/categories', getAuthHeader());
         setCategories(response.data);
       } catch (error) {
         console.error('Error fetching categories:', error);
@@ -97,7 +97,7 @@ function CustomerHome() {
   useEffect(() => {
     const fetchTopSellingProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products/top-selling?limit=8', getAuthHeader());
+        const response = await axios.get('http://localhost:5001/api/products/top-selling?limit=8', getAuthHeader());
         setTopSellingProducts(response.data);
       } catch (error) {
         console.error('Error fetching top selling products:', error);
@@ -112,7 +112,7 @@ function CustomerHome() {
     if (selectedCategory) {
       const fetchProducts = async () => {
         try {
-          const response = await axios.get(`http://localhost:5000/api/products/category/${selectedCategory}`, getAuthHeader());
+          const response = await axios.get(`http://localhost:5001/api/products/category/${selectedCategory}`, getAuthHeader());
           setProducts(response.data);
         } catch (error) {
           console.error('Error fetching products:', error);
@@ -133,7 +133,7 @@ function CustomerHome() {
         }
 
         try {
-          const response = await axios.get(`http://localhost:5000/api/products/search?name=${searchTerm}`, getAuthHeader());
+          const response = await axios.get(`http://localhost:5001/api/products/search?name=${searchTerm}`, getAuthHeader());
           setSearchResults(response.data);
         } catch (error) {
           console.error('Error fetching search results:', error);
@@ -162,7 +162,7 @@ function CustomerHome() {
         quantity: 1,
       };
 
-      await axios.post('http://localhost:5000/api/cart', payload, getAuthHeader());
+      await axios.post('http://localhost:5001/api/cart', payload, getAuthHeader());
       alert('Added to cart!');
     } catch (err) {
       console.error('Error adding to cart:', err);
@@ -180,7 +180,7 @@ function CustomerHome() {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/wishlist', {
+      await axios.post('http://localhost:5001/api/wishlist', {
         customer_id: customerId,
         product_id: productId
       }, getAuthHeader());

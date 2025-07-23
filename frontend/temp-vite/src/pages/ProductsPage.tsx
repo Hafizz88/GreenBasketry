@@ -35,11 +35,12 @@ const ProductsPage = () => {
     return localStorage.getItem('userId') && localStorage.getItem('token');
   };
 
+  // Fetch products from API
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        const response = await axios.get('http://localhost:5000/api/products', getAuthHeader());
-        setProducts(response.data);
+        const response = await axios.get('http://localhost:5001/api/products', getAuthHeader());
+        setProducts(response.data);  // Store fetched products
       } catch (err) {
         console.error('Failed to load products', err);
         toast({
@@ -79,7 +80,7 @@ const ProductsPage = () => {
         return;
       }
 
-      await axios.post('http://localhost:5000/api/cart', {
+      await axios.post('http://localhost:5001/api/cart', {
         customer_id: customerId,
         product_id: productId,
         quantity: 1
@@ -114,7 +115,7 @@ const ProductsPage = () => {
       const storedCustomerId = localStorage.getItem('userId');
       const customerId = parseInt(storedCustomerId || '0', 10);
 
-      await axios.post('http://localhost:5000/api/wishlist', {
+      await axios.post('http://localhost:5001/api/wishlist', {
         customer_id: customerId,
         product_id: productId
       }, getAuthHeader());

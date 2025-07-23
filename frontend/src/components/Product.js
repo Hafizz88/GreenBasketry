@@ -5,7 +5,7 @@ function Product() {
   const [products, setProducts] = useState([]);
 
   useEffect(() => {
-    axios.get('http://localhost:5000/api/products') // change PORT accordingly
+    axios.get('http://localhost:5001/api/products') // change PORT accordingly
       .then(res => setProducts(res.data))
       .catch(err => console.error('Failed to load products', err));
   }, []);
@@ -28,7 +28,7 @@ const handleAddToCart = async (productId) => {
       quantity: 1
     });
 
-    await axios.post('http://localhost:5000/api/cart', {
+    await axios.post('http://localhost:5001/api/cart', {
       customer_id: customerId,
       product_id: productId,
       quantity: 1
@@ -43,7 +43,7 @@ const handleAddToCart = async (productId) => {
 
   const handleAddToWishlist = async (productId) => {
     try {
-      await axios.post('http://localhost:5000/api/wishlist', {
+      await axios.post('http://localhost:5001/api/wishlist', {
         customer_id: 1, // Replace with actual logged-in user ID
         product_id: productId
       });

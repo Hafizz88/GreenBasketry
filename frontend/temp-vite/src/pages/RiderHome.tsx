@@ -101,7 +101,7 @@ const RiderHome: React.FC = () => {
 
   const fetchRiderData = async (riderId: number) => {
     try {
-      const assignmentsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/current-assignments`, {
+      const assignmentsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/current-assignments`, {
         headers: getAuthHeaders()
       });
       if (assignmentsResponse.ok) {
@@ -109,7 +109,7 @@ const RiderHome: React.FC = () => {
         setCurrentAssignments(assignments);
       }
       
-      const notificationsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/notifications`, {
+      const notificationsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/notifications`, {
         headers: getAuthHeaders()
       });
       if (notificationsResponse.ok) {
@@ -135,7 +135,7 @@ const RiderHome: React.FC = () => {
     try {
       console.log('Fetching available orders for:', { riderId: rider.rider_id, zone: currentZone });
       const response = await fetch(
-        `http://localhost:5000/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(currentZone)}`,
+        `http://localhost:5001/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(currentZone)}`,
         { headers: getAuthHeaders() }
       );
       if (response.ok) {
@@ -166,7 +166,7 @@ const RiderHome: React.FC = () => {
     if (!location || !rider?.rider_id) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/location`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/location`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -222,7 +222,7 @@ const RiderHome: React.FC = () => {
     if (!rider?.rider_id) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/accept-order`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/accept-order`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ deliveryId })
@@ -242,7 +242,7 @@ const RiderHome: React.FC = () => {
   const markArrival = async (deliveryId: number) => {
     if (!rider?.rider_id) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/delivery/${deliveryId}/arrival`, {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/arrival`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ riderId: rider.rider_id })
@@ -263,7 +263,7 @@ const RiderHome: React.FC = () => {
   // Add confirmPayment function
   const confirmPayment = async (orderId: number) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/order/${orderId}/confirm-payment`, {
+      const response = await fetch(`http://localhost:5001/api/rider/order/${orderId}/confirm-payment`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ paymentMethod: 'cash' }) // or allow selection
@@ -303,7 +303,7 @@ const RiderHome: React.FC = () => {
   const toggleAvailability = async () => {
     if (!rider?.rider_id) return;
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/availability`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/availability`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ available: !rider.available })

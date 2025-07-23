@@ -318,7 +318,7 @@ export const placeOrder = async (req, res) => {
       const itemSubtotal = Number(item.price) * Number(item.quantity);
       subtotal += itemSubtotal;
       // Calculate VAT for this product
-      const itemVAT = itemSubtotal * ((Number(item.vat_percantage) || 0) / 100);
+      const itemVAT = itemSubtotal * ((Number(item.vat_percentage) || 0) / 100);
       vat_amount += itemVAT;
       // Calculate product points
       total_product_points += (Number(item.points_rewarded) || 0) * Number(item.quantity);

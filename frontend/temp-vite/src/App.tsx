@@ -25,6 +25,7 @@ import ManageCoupons from "./pages/ManageCoupons";
 import SetDiscount from "./pages/SetDiscount";
 import DashboardHome from "./pages/DashboardHome";
 import RiderHome from "./pages/RiderHome";
+import ProductDetails from "./pages/ProductDetails";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const App = () => {
             <Route path="/order-success" element={<OrderSuccessPage />} />
             <Route path="/voucher-summary" element={<VoucherSummaryPage />} />
             <Route path="/rider/home" element={<RiderHome />} />
+            <Route path="/product/:id" element={<ProductDetails />} />
             {/* Admin Dashboard and subpages */}
             <Route path="/admin" element={<AdminDashboard />}>
               <Route index element={<DashboardHome />} />

@@ -80,7 +80,7 @@ const RiderHome = () => {
     
     try {
       // Fetch current assignments
-      const assignmentsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/current-assignments`, {
+      const assignmentsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/current-assignments`, {
         headers: getAuthHeaders()
       });
       if (assignmentsResponse.ok) {
@@ -89,7 +89,7 @@ const RiderHome = () => {
       }
 
       // Fetch notifications
-      const notificationsResponse = await fetch(`http://localhost:5000/api/rider/${riderId}/notifications`, {
+      const notificationsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/notifications`, {
         headers: getAuthHeaders()
       });
       if (notificationsResponse.ok) {
@@ -103,7 +103,7 @@ const RiderHome = () => {
 
   const handleLogin = async (email, password) => {
     try {
-      const response = await fetch('http://localhost:5000/api/rider/login', {
+      const response = await fetch('http://localhost:5001/api/rider/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
@@ -128,7 +128,7 @@ const RiderHome = () => {
     if (!location || !rider?.rider_id) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/location`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/location`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({
@@ -161,7 +161,7 @@ const RiderHome = () => {
     }
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(storedZone)}`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/available-orders?zone=${encodeURIComponent(storedZone)}`, {
         headers: getAuthHeaders()
       });
       if (response.ok) {
@@ -177,7 +177,7 @@ const RiderHome = () => {
     if (!rider?.rider_id) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/accept-order`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/accept-order`, {
         method: 'POST',
         headers: getAuthHeaders(),
         body: JSON.stringify({ deliveryId })
@@ -196,7 +196,7 @@ const RiderHome = () => {
 
   const setDeliveryTime = async (deliveryId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/delivery/${deliveryId}/set-time`, {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/set-time`, {
         method: 'PUT',
         headers: getAuthHeaders()
       });
@@ -213,7 +213,7 @@ const RiderHome = () => {
 
   const markArrival = async (deliveryId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/delivery/${deliveryId}/arrival`, {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/arrival`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ riderId: rider.rider_id })
@@ -230,7 +230,7 @@ const RiderHome = () => {
 
   const confirmPayment = async (orderId) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/order/${orderId}/confirm-payment`, {
+      const response = await fetch(`http://localhost:5001/api/rider/order/${orderId}/confirm-payment`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ paymentMethod: 'cash' })
@@ -249,7 +249,7 @@ const RiderHome = () => {
     if (!rider?.rider_id) return;
     
     try {
-      const response = await fetch(`http://localhost:5000/api/rider/${rider.rider_id}/availability`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${rider.rider_id}/availability`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify({ available: !rider.available })

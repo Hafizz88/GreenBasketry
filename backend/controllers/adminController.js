@@ -1,14 +1,25 @@
 import { client } from '../db.js';
+import { uploadImageToCloudinary } from '../controllers/cloudinaryController.js';
+import { v2 as cloudinary } from 'cloudinary';
 
 // Add a new product
 export const addProduct = async (req, res) => {
-  const { name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
+  const { name, category, price, stock, description, discount_percentage, vat_percentage } = req.body;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
+  let imageUrl = null;
+
   try {
+    // Upload image if present
+    if (req.file) {
+      // Create folder path based on category
+      const folderPath = `ecommerce/${category.toLowerCase().replace(/\s+/g, '_')}`;
+      imageUrl = await uploadImageToCloudinary(req.file.buffer, folderPath);
+    }
+
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percantage, updated_by_admin_id)
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage, admin_id]
+      [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -66,10 +77,37 @@ export const getAllProducts = async (req, res) => {
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
+    // 1. Get the product's image_url
+    const productRes = await client.query('SELECT image_url FROM products WHERE product_id = $1', [id]);
+    const imageUrl = productRes.rows[0]?.image_url;
+
+    // 2. Delete related records
+    await client.query('DELETE FROM cart_items WHERE product_id = $1', [id]);
+    await client.query('DELETE FROM buy_history WHERE product_id = $1', [id]);
+    await client.query('DELETE FROM wishlist WHERE product_id = $1', [id]);
+
+    // 3. Delete the product
     await client.query('DELETE FROM products WHERE product_id = $1', [id]);
-    res.json({ message: 'Product deleted' });
+
+    // 4. Delete image from Cloudinary if exists
+    if (imageUrl) {
+      // Extract public_id from imageUrl
+      // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v1234567890/ecommerce/category/filename.jpg
+      const match = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z]+$/);
+      const publicId = match ? match[1] : null;
+      if (publicId) {
+        try {
+          await cloudinary.uploader.destroy(publicId);
+        } catch (cloudErr) {
+          console.error('Cloudinary image deletion error:', cloudErr);
+        }
+      }
+    }
+
+    res.json({ message: 'Product and related data deleted' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete product' });
+    console.error('Error deleting product:', err);
+    res.status(500).json({ error: 'Failed to delete product and related data' });
   }
 };
 
