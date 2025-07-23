@@ -7,9 +7,13 @@ import {
   SearchProductByname, 
   getTopSellingProducts, 
   createProduct, 
-  getProductDetails 
+  getProductDetails, 
+  addProductReview, 
+  upvoteReview, 
+  getProductReviews 
 } from '../controllers/productController.js';
 import { upload } from '../controllers/cloudinaryController.js'; // Import multer configuration for Cloudinary
+import verifyToken from '../middleware/verifytoken.js';
 
 // Routes for product operations
 router.get('/', getAllProducts);
@@ -23,5 +27,9 @@ router.post('/create', upload.single('image'), createProduct); // Multer middlew
 
 // Route for getting product details by ID
 router.get('/:id', getProductDetails);
+
+router.post('/:product_id/reviews', verifyToken, addProductReview);
+router.get('/:product_id/reviews', getProductReviews);
+router.post('/reviews/:review_id/upvote', verifyToken, upvoteReview);
 
 export default router;
