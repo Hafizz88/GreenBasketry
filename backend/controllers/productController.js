@@ -68,7 +68,7 @@ const getTopSellingProducts = async (req, res) => {
         p.category,
         p.stock,
         p.description,
-        p.vat_percantage,
+        p.vat_percentage,
         p.discount_percentage,
         p.discount_started,
         p.discount_finished,
@@ -81,7 +81,7 @@ const getTopSellingProducts = async (req, res) => {
       INNER JOIN buy_history bh ON p.product_id = bh.product_id
       WHERE p.stock > 0 
       GROUP BY p.product_id, p.name, p.price, p.image_url, p.category, p.stock, 
-               p.description, p.vat_percantage, p.discount_percentage, 
+               p.description, p.vat_percentage, p.discount_percentage, 
                p.discount_started, p.discount_finished, p.points_rewarded
       ORDER BY total_times_purchased DESC, total_customers DESC
       LIMIT $1`,

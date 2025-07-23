@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, ShoppingCart, Heart, User, Menu, X, 
   TrendingUp, Grid3X3, Star, Plus, Filter,
-  LogOut, MapPin, Bell, Settings
+  LogOut, MapPin, Bell, Settings, X as CloseIcon, RefreshCw as RefreshIcon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -45,6 +45,8 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const brandRef = useRef<HTMLSpanElement>(null);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [showNotifications, setShowNotifications] = useState(false);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('token');
@@ -189,6 +191,65 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
       socket.disconnect();
     };
   }, [toast]);
+
+  // Fetch notifications for the customer
+  const fetchNotifications = async () => {
+    const customerId = localStorage.getItem('userId');
+    if (!customerId) return;
+    try {
+      const response = await axios.get(`http://localhost:5000/api/notifications/customer/${customerId}`);
+      setNotifications(response.data.notifications || []);
+    } catch (err) {
+      console.error('Failed to fetch notifications', err);
+    }
+  };
+
+  // Mark notification as read
+  const markAsRead = async (notification_id: number) => {
+    try {
+      await axios.patch(`http://localhost:5000/api/notifications/${notification_id}/read`);
+      setNotifications((prev) => prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n));
+    } catch (err) {
+      console.error('Failed to mark notification as read', err);
+    }
+  };
+
+  // Mark all notifications as read
+  const markAllAsRead = async () => {
+    try {
+      const customerId = localStorage.getItem('userId');
+      if (!customerId) return;
+      await axios.patch(`http://localhost:5000/api/notifications/customer/${customerId}/mark-all-read`);
+      setNotifications((prev) => prev.map(n => ({ ...n, is_read: true })));
+      toast({
+        title: 'All Notifications Marked as Read',
+        description: 'All your notifications have been marked as read.',
+      });
+    } catch (err) {
+      console.error('Failed to mark all notifications as read', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to mark all notifications as read. Please try again.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+  // Fetch notifications when dropdown is opened
+  useEffect(() => {
+    if (showNotifications) {
+      fetchNotifications();
+    }
+  }, [showNotifications]);
+
+  // Auto-refresh notifications every 30 seconds when dropdown is open
+  useEffect(() => {
+    if (!showNotifications) return;
+    const interval = setInterval(() => {
+      fetchNotifications();
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [showNotifications]);
 
   const handleAddToCart = async (productId: number) => {
     if (!isLoggedIn()) {
@@ -345,9 +406,79 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 relative">
               {isLoggedIn() ? (
                 <>
+                  {/* Notification Bell */}
+                  <button
+                    className="relative p-2 rounded-lg hover:bg-accent transition-colors"
+                    onClick={() => setShowNotifications((prev) => !prev)}
+                  >
+                    <Bell className="h-5 w-5" />
+                    {notifications.filter(n => !n.is_read).length > 0 && (
+                      <span className="absolute -top-1 -right-1 bg-destructive text-white rounded-full text-xs w-5 h-5 flex items-center justify-center">
+                        {notifications.filter(n => !n.is_read).length}
+                      </span>
+                    )}
+                  </button>
+                  {/* Notification Dropdown */}
+                  {showNotifications && (
+                    <div className="absolute right-0 mt-2 w-96 bg-background border rounded-lg shadow-lg z-50 flex flex-col" style={{ marginTop: '350px' }}>
+                      <div className="flex items-center justify-between p-4 border-b font-semibold text-lg bg-white rounded-t-lg shadow-sm">
+                        <span>Notifications</span>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={fetchNotifications}
+                            className="flex items-center justify-center w-8 h-8 rounded-full bg-gray-100 border border-gray-200 hover:bg-gray-200 transition-colors duration-150"
+                            aria-label="Refresh notifications"
+                            style={{ border: '1px solid #e5e7eb', outline: 'none', cursor: 'pointer' }}
+                          >
+                            <RefreshIcon className="h-5 w-5 text-gray-700" />
+                          </button>
+                          {notifications.filter(n => !n.is_read).length > 0 && (
+                            <button
+                              onClick={markAllAsRead}
+                              className="text-xs px-3 py-1 rounded bg-gray-100 hover:bg-gray-200 text-gray-700 border border-gray-200 transition-colors duration-150"
+                              style={{ fontWeight: 500 }}
+                            >
+                              Mark all as read
+                            </button>
+                          )}
+                          <button
+                            onClick={() => setShowNotifications(false)}
+                            className="ml-2 flex items-center justify-center w-9 h-9 rounded-full bg-white border border-gray-300 shadow hover:bg-gray-100 transition-colors duration-200"
+                            aria-label="Close notifications"
+                            style={{ border: '1px solid #e5e7eb', outline: 'none', cursor: 'pointer' }}
+                          >
+                            <CloseIcon className="h-6 w-6 text-gray-700" />
+                          </button>
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-4 p-4" style={{ maxHeight: '20rem', overflowY: 'auto' }}>
+                        {notifications.length === 0 ? (
+                          <div className="p-4 text-muted-foreground">No notifications yet.</div>
+                        ) : (
+                          notifications.map((notif) => (
+                            <Card
+                              key={notif.notification_id}
+                              className={`border-2 border-blue-500 cursor-pointer ${notif.is_read ? 'opacity-60' : ''}`}
+                              onClick={() => !notif.is_read && markAsRead(notif.notification_id)}
+                            >
+                              <CardContent className="py-2 px-4 flex flex-col gap-1">
+                                <div className="flex items-center gap-2">
+                                  <Badge variant={notif.is_read ? 'outline' : 'secondary'}>
+                                    {notif.is_read ? 'Read' : 'Mark as read'}
+                                  </Badge>
+                                  <span className="text-xs text-muted-foreground ml-auto">{new Date(notif.created_at).toLocaleString()}</span>
+                                </div>
+                                <div className="font-medium">{notif.message}</div>
+                              </CardContent>
+                            </Card>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  )}
                   <Button 
                     variant="ghost" 
                     size="icon"

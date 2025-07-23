@@ -287,7 +287,7 @@ export const placeOrder = async (req, res) => {
 
     // 3. Fetch cart items with product details (price, vat_percantage, points_rewarded)
     const cartItemsResult = await client.query(
-      `SELECT ci.product_id, ci.quantity, p.price, p.vat_percantage, p.points_rewarded, p.stock
+      `SELECT ci.product_id, ci.quantity, p.price, p.vat_percentage, p.points_rewarded, p.stock
        FROM cart_items ci
        JOIN products p ON ci.product_id = p.product_id
        WHERE ci.cart_id = $1`,
@@ -308,13 +308,13 @@ export const placeOrder = async (req, res) => {
     let total_product_points = 0;
     for (const item of cartItems) {
       // Check stock availability
-      if (item.stock < item.quantity) {
+      /*if (item.stock < item.quantity) {
         await client.query('ROLLBACK');
         return res.status(400).json({
           success: false,
           error: `Insufficient stock for product ID ${item.product_id}. Available: ${item.stock}, Requested: ${item.quantity}`
         });
-      }
+      }*/
       const itemSubtotal = Number(item.price) * Number(item.quantity);
       subtotal += itemSubtotal;
       // Calculate VAT for this product
@@ -445,10 +445,10 @@ export const placeOrder = async (req, res) => {
         );
       }
       // Update product stock
-      await client.query(
+      /*await client.query(
         `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
         [item.quantity, item.product_id]
-      );
+      );*/
     }
 
     // 14. Create delivery record

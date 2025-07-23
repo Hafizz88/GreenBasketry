@@ -1,5 +1,6 @@
 import { client } from "../db.js";
 import { io } from '../index.js';
+import { addNotification } from './notificationController.js';
 
 // Rider login
 const riderLogin = async (req, res) => {
@@ -169,6 +170,13 @@ const acceptOrder = async (req, res) => {
       [deliveryId]
     );
 
+    // Update order status to 'shipped'
+    await client.query(
+      `UPDATE orders SET order_status = 'shipped' 
+       WHERE order_id = (SELECT order_id FROM deliveries WHERE delivery_id = $1)`,
+      [deliveryId]
+    );
+
     // Find customerId for this delivery
     const customerResult = await client.query(
       `SELECT c.customer_id FROM deliveries d
@@ -183,6 +191,10 @@ const acceptOrder = async (req, res) => {
         deliveryId,
         message: 'Your order has been accepted by a rider.'
       });
+      // Store notification in DB
+      await addNotification({
+        body: { delivery_id: deliveryId, rider_id: riderId, message: 'Your order has been accepted by a rider.' }
+      }, { status: () => ({ json: () => {} }) });
     }
     
     res.status(201).json({
@@ -190,7 +202,7 @@ const acceptOrder = async (req, res) => {
       assignment: assignmentQuery.rows[0]
     });
     
-    console.log(`✅ Rider ${riderId} accepted delivery ${deliveryId}`);
+    console.log(`✅ Rider ${riderId} accepted delivery ${deliveryId} - Order status changed to 'shipped'`);
   } catch (error) {
     console.error('Error accepting order:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -240,16 +252,16 @@ const markArrival = async (req, res) => {
   const { riderId } = req.body;
   
   try {
-    // Create arrival notification
-    const notificationQuery = await client.query(
-      `INSERT INTO arrival_notifications (delivery_id, rider_id, message) 
-       VALUES ($1, $2, $3) RETURNING *`,
-      [deliveryId, riderId, 'Rider has arrived at your location']
-    );
-    
     // Update delivery status
     await client.query(
       `UPDATE deliveries SET delivery_status = 'out_for_delivery' WHERE delivery_id = $1`,
+      [deliveryId]
+    );
+
+    // Update order status to 'delivered'
+    await client.query(
+      `UPDATE orders SET order_status = 'delivered' 
+       WHERE order_id = (SELECT order_id FROM deliveries WHERE delivery_id = $1)`,
       [deliveryId]
     );
 
@@ -267,14 +279,17 @@ const markArrival = async (req, res) => {
         deliveryId,
         message: 'Your rider has arrived!'
       });
+      // Store notification in DB
+      await addNotification({
+        body: { delivery_id: deliveryId, rider_id: riderId, message: 'Rider has arrived at your location' }
+      }, { status: () => ({ json: () => {} }) });
     }
     
     res.status(200).json({
-      message: 'Arrival marked successfully',
-      notification: notificationQuery.rows[0]
+      message: 'Arrival marked successfully'
     });
     
-    console.log(`🚚 Rider ${riderId} marked arrival for delivery ${deliveryId}`);
+    console.log(`🚚 Rider ${riderId} marked arrival for delivery ${deliveryId} - Order status changed to 'delivered'`);
   } catch (error) {
     console.error('Error marking arrival:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -307,6 +322,12 @@ const confirmPaymentReceived = async (req, res) => {
       [orderId]
     );
 
+    // Update order status to 'confirmed'
+    await client.query(
+      `UPDATE orders SET order_status = 'confirmed' WHERE order_id = $1`,
+      [orderId]
+    );
+
     // Find customerId for this order and send notification
     const customerResult = await client.query(
       `SELECT c.customer_id FROM orders o
@@ -321,6 +342,10 @@ const confirmPaymentReceived = async (req, res) => {
         orderId,
         message: 'Thank you for your order! Payment received and delivery completed. Enjoy your groceries! 🛒✨'
       });
+      // Store notification in DB
+      await addNotification({
+        body: { delivery_id: updateQuery.rows[0]?.delivery_id, rider_id: null, message: 'Thank you for your order! Payment received and delivery completed. Enjoy your groceries! 🛒✨' }
+      }, { status: () => ({ json: () => {} }) });
     }
     
     res.status(200).json({
@@ -330,7 +355,7 @@ const confirmPaymentReceived = async (req, res) => {
       payment_date: new Date()
     });
     
-    console.log(`💰 Payment confirmed for order ${orderId}`);
+    console.log(`💰 Payment confirmed for order ${orderId} - Order status changed to 'confirmed'`);
   } catch (error) {
     console.error('Error confirming payment:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -530,6 +555,90 @@ const updateDeliveryStatus = async (req, res) => {
   }
 };
 
+// Update order status
+const updateOrderStatus = async (req, res) => {
+  const { orderId } = req.params;
+  const { order_status } = req.body;
+  
+  // Validate allowed order statuses
+  const allowedStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'];
+  if (!allowedStatuses.includes(order_status)) {
+    return res.status(400).json({ 
+      error: 'Invalid order status. Allowed statuses: ' + allowedStatuses.join(', ') 
+    });
+  }
+  
+  try {
+    const result = await client.query(
+      `UPDATE orders SET order_status = $1 WHERE order_id = $2 RETURNING *`,
+      [order_status, orderId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    
+    res.status(200).json({
+      message: 'Order status updated successfully',
+      order: result.rows[0]
+    });
+    
+    console.log(`📦 Order ${orderId} status updated to ${order_status}`);
+  } catch (error) {
+    console.error('Error updating order status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Update delivery status and order status together
+const updateDeliveryAndOrderStatus = async (req, res) => {
+  const { deliveryId } = req.params;
+  const { delivery_status, order_status } = req.body;
+  
+  // Validate allowed order statuses
+  const allowedOrderStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'];
+  if (order_status && !allowedOrderStatuses.includes(order_status)) {
+    return res.status(400).json({ 
+      error: 'Invalid order status. Allowed statuses: ' + allowedOrderStatuses.join(', ') 
+    });
+  }
+  
+  try {
+    await client.query('BEGIN');
+    
+    // Update delivery status
+    if (delivery_status) {
+      await client.query(
+        `UPDATE deliveries SET delivery_status = $1 WHERE delivery_id = $2`,
+        [delivery_status, deliveryId]
+      );
+    }
+    
+    // Update order status if provided
+    if (order_status) {
+      await client.query(
+        `UPDATE orders SET order_status = $1 
+         WHERE order_id = (SELECT order_id FROM deliveries WHERE delivery_id = $2)`,
+        [order_status, deliveryId]
+      );
+    }
+    
+    await client.query('COMMIT');
+    
+    res.status(200).json({
+      message: 'Delivery and order status updated successfully',
+      delivery_status,
+      order_status
+    });
+    
+    console.log(`📦 Delivery ${deliveryId} updated - Delivery: ${delivery_status}, Order: ${order_status}`);
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error updating delivery and order status:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 // Get rider profile
 const getRiderProfile = async (req, res) => {
   const { riderId } = req.params;
@@ -715,5 +824,7 @@ export {
   createArrivalNotification,
   getRiderNotifications,
   markNotificationAsRead,
-  getAvailableRiders
+  getAvailableRiders,
+  updateOrderStatus,
+  updateDeliveryAndOrderStatus
 };

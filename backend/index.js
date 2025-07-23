@@ -15,6 +15,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import riderRoutes from './routes/riderRoutes.js';
 import http from 'http';
 import { Server } from 'socket.io';
+import notificationRoutes from './routes/notificationRoutes.js'; // include .js extension
 
 dotenv.config();
 
@@ -34,6 +35,7 @@ app.use('/api/thanas', ThanaRoutes); // Add Thana routes
 app.use('/api/vouchers', voucherRoutes); // Add voucher routes
 app.use('/api/orders', orderRoutes);
 app.use('/api/rider', riderRoutes); // Add rider routes
+app.use('/api/notifications', notificationRoutes); // Add notification routes
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: ['http://localhost:3000', 'http://localhost:8081','http://192.168.10.59:8081'], credentials: true } });
