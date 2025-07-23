@@ -197,7 +197,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
     const customerId = localStorage.getItem('userId');
     if (!customerId) return;
     try {
-      const response = await axios.get(`http://localhost:5000/api/notifications/customer/${customerId}`);
+      const response = await axios.get(`http://localhost:5001/api/notifications/customer/${customerId}`);
       setNotifications(response.data.notifications || []);
     } catch (err) {
       console.error('Failed to fetch notifications', err);
@@ -207,7 +207,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   // Mark notification as read
   const markAsRead = async (notification_id: number) => {
     try {
-      await axios.patch(`http://localhost:5000/api/notifications/${notification_id}/read`);
+      await axios.patch(`http://localhost:5001/api/notifications/${notification_id}/read`);
       setNotifications((prev) => prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n));
     } catch (err) {
       console.error('Failed to mark notification as read', err);
@@ -219,7 +219,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
     try {
       const customerId = localStorage.getItem('userId');
       if (!customerId) return;
-      await axios.patch(`http://localhost:5000/api/notifications/customer/${customerId}/mark-all-read`);
+      await axios.patch(`http://localhost:5001/api/notifications/customer/${customerId}/mark-all-read`);
       setNotifications((prev) => prev.map(n => ({ ...n, is_read: true })));
       toast({
         title: 'All Notifications Marked as Read',
