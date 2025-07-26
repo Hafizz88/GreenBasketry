@@ -343,7 +343,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    navigate('/');
+    navigate('/login'); // Changed from '/' to '/login'
   };
 
   const getDisplayedProducts = () => {
@@ -496,6 +496,14 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
                     <User className="h-5 w-5" />
                   </Button>
                   
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/complaints')}
+                    className="hidden sm:flex"
+                  >
+                    📝 File a Complaint
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"

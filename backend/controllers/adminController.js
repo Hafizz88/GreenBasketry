@@ -4,7 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Add a new product
 export const addProduct = async (req, res) => {
-  const { name, category, price, stock, description, discount_percentage, vat_percentage } = req.body;
+  const { name, category, price, stock, description, discount_percentage, vat_percentage, discount_started, discount_finished } = req.body;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   let imageUrl = null;
 
@@ -17,9 +17,9 @@ export const addProduct = async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9) RETURNING *`,
-      [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id]
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id, discount_started, discount_finished)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
+      [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id, discount_started, discount_finished]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -129,6 +129,28 @@ export const updateProduct = async (req, res) => {
   }
 };
 
+// Set product discount and validity
+export const setProductDiscount = async (req, res) => {
+  const { product_id } = req.params;
+  const { discount_percentage, discount_started, discount_finished } = req.body;
+  const admin_id = req.user && req.user.id;
+  if (!admin_id) {
+    return res.status(400).json({ error: 'Admin ID is required' });
+  }
+  try {
+    const result = await client.query(
+      `UPDATE products SET discount_percentage=$1, discount_started=$2, discount_finished=$3, updated_by_admin_id=$4, last_updated=NOW() WHERE product_id=$5 RETURNING *`,
+      [discount_percentage, discount_started, discount_finished, admin_id, product_id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to set discount' });
+  }
+};
+
 // Get all coupons
 export const getAllCoupons = async (req, res) => {
   try {
@@ -176,5 +198,32 @@ export const updateCoupon = async (req, res) => {
   } catch (err) {
     console.error('Error updating coupon:', err);
     res.status(500).json({ error: 'Failed to update coupon' });
+  }
+};
+
+// Mark a complaint as resolved
+export const resolveComplaint = async (req, res) => {
+  const { id } = req.params;
+  try {
+    const result = await client.query(
+      'UPDATE complaints SET resolved = true WHERE complaint_id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Complaint not found' });
+    }
+    res.json(result.rows[0]);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to resolve complaint' });
+  }
+};
+
+// Run discount expiry function
+export const runDiscountExpiry = async (req, res) => {
+  try {
+    await client.query('SELECT reset_expired_product_discounts();');
+    res.json({ message: 'Expired discounts reset.' });
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to reset discounts.' });
   }
 };

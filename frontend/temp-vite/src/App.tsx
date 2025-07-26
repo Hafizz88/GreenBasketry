@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Index from "./pages/Index";
 import HomePage from "./pages/HomePage";
 import LoginPage from "./pages/LoginPage";
@@ -26,6 +26,9 @@ import SetDiscount from "./pages/SetDiscount";
 import DashboardHome from "./pages/DashboardHome";
 import RiderHome from "./pages/RiderHome";
 import ProductDetails from "./pages/ProductDetails";
+import ComplaintsPage from "./pages/ComplaintsPage";
+import ComplaintsAdminPage from "./pages/ComplaintsAdminPage";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
@@ -57,26 +60,105 @@ const App = () => {
         <Sonner />
         <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Index onShowAuth={handleShowAuth} />} />
-            <Route path="/home" element={<HomePage onShowAuth={handleShowAuth} />} />
+            <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<LoginPage />} />
             <Route path="/signup" element={<SignupPage />} />
-            <Route path="/cart" element={<CartPage />} />
-            <Route path="/profile" element={<CustomerProfilePage />} />
-            <Route path="/products" element={<ProductsPage />} />
-            <Route path="/customer-profile" element={<CustomerProfilePage />} />
-            <Route path="/order-success" element={<OrderSuccessPage />} />
-            <Route path="/voucher-summary" element={<VoucherSummaryPage />} />
-            <Route path="/rider/home" element={<RiderHome />} />
-            <Route path="/product/:id" element={<ProductDetails />} />
+            <Route
+              path="/home"
+              element={
+                <ProtectedRoute>
+                  <HomePage onShowAuth={handleShowAuth} />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/cart"
+              element={
+                <ProtectedRoute>
+                  <CartPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <CustomerProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/products"
+              element={
+                <ProtectedRoute>
+                  <ProductsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/customer-profile"
+              element={
+                <ProtectedRoute>
+                  <CustomerProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/order-success"
+              element={
+                <ProtectedRoute>
+                  <OrderSuccessPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/voucher-summary"
+              element={
+                <ProtectedRoute>
+                  <VoucherSummaryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rider/home"
+              element={
+                <ProtectedRoute>
+                  <RiderHome />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/product/:id"
+              element={
+                <ProtectedRoute>
+                  <ProductDetails />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/complaints"
+              element={
+                <ProtectedRoute>
+                  <ComplaintsPage customerId={Number(localStorage.getItem('userId'))} />
+                </ProtectedRoute>
+              }
+            />
             {/* Admin Dashboard and subpages */}
-            <Route path="/admin" element={<AdminDashboard />}>
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            >
               <Route index element={<DashboardHome />} />
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="products" element={<ManageProducts />} />
               <Route path="add-product" element={<AddProduct />} />
               <Route path="coupons" element={<ManageCoupons />} />
               <Route path="set-discount" element={<SetDiscount />} />
+              <Route path="complaints" element={<ComplaintsAdminPage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

@@ -20,6 +20,8 @@ const SetDiscount: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [selectedProduct, setSelectedProduct] = useState('');
   const [discount, setDiscount] = useState('');
+  const [discountStart, setDiscountStart] = useState('');
+  const [discountEnd, setDiscountEnd] = useState('');
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState('');
   const [error, setError] = useState('');
@@ -46,7 +48,11 @@ const SetDiscount: React.FC = () => {
     try {
       await axios.put(
         `http://localhost:5001/api/admin/products/${selectedProduct}/discount`,
-        { discount_percent: parseFloat(discount) },
+        {
+          discount_percentage: parseFloat(discount),
+          discount_started: discountStart,
+          discount_finished: discountEnd
+        },
         getAuthHeader()
       );
       setSuccess('Discount set successfully!');
@@ -78,7 +84,21 @@ const SetDiscount: React.FC = () => {
           max={100}
           required
         />
-        <button type="submit" disabled={loading || !selectedProduct || !discount}>{loading ? 'Setting...' : 'Set Discount'}</button>
+        <input
+          type="date"
+          value={discountStart}
+          onChange={e => setDiscountStart(e.target.value)}
+          required
+          placeholder="Discount Start Date"
+        />
+        <input
+          type="date"
+          value={discountEnd}
+          onChange={e => setDiscountEnd(e.target.value)}
+          required
+          placeholder="Discount End Date"
+        />
+        <button type="submit" disabled={loading || !selectedProduct || !discount || !discountStart || !discountEnd}>{loading ? 'Setting...' : 'Set Discount'}</button>
       </form>
       {success && <p style={{ color: 'green' }}>{success}</p>}
       {error && <p style={{ color: 'red' }}>{error}</p>}

@@ -16,6 +16,7 @@ import riderRoutes from './routes/riderRoutes.js';
 import http from 'http';
 import { Server } from 'socket.io';
 import notificationRoutes from './routes/notificationRoutes.js'; // include .js extension
+import complaintRoutes from './routes/complaintRoutes.js';
 
 dotenv.config();
 
@@ -36,6 +37,7 @@ app.use('/api/vouchers', voucherRoutes); // Add voucher routes
 app.use('/api/orders', orderRoutes);
 app.use('/api/rider', riderRoutes); // Add rider routes
 app.use('/api/notifications', notificationRoutes); // Add notification routes
+app.use('/api/complaints', complaintRoutes); // Add complaint routes
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: ['http://localhost:3000', 'http://localhost:8080', 'http://localhost:8081','http://192.168.10.59:8081'], credentials: true } });
@@ -52,6 +54,29 @@ export { io };
 (async () => {
   try {
     await connectDB(); // connect once before starting the server
+
+    // Run discount expiry and coupon deactivation functions on backend startup
+    try {
+      await client.query('SELECT reset_expired_product_discounts();');
+      console.log('✅ Expired product discounts reset on startup.');
+      await client.query('SELECT deactivate_expired_coupons();');
+      console.log('✅ Expired coupons deactivated on startup.');
+    } catch (err) {
+      console.error('❌ Failed to reset expired discounts or deactivate coupons on startup:', err.message);
+    }
+
+    // Schedule both functions to run every 10 minutes
+    setInterval(async () => {
+      try {
+        await client.query('SELECT reset_expired_product_discounts();');
+        console.log('⏰ Expired product discounts reset (interval).');
+        await client.query('SELECT deactivate_expired_coupons();');
+        console.log('⏰ Expired coupons deactivated (interval).');
+      } catch (err) {
+        console.error('❌ Interval error resetting discounts or deactivating coupons:', err.message);
+      }
+    }, 10 * 60 * 1000); // 10 minutes in milliseconds
+
     server.listen(PORT, () => {
       console.log(`Server is running on port ${PORT}`);
       const customers= async () => {

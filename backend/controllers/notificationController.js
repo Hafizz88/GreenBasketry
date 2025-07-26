@@ -91,4 +91,33 @@ export const markNotificationAsRead = async (req, res) => {
     console.error('[markNotificationAsRead] Error:', err);
     res.status(500).json({ error: 'Failed to mark notification as read' });
   }
+};
+
+// Mark all notifications as read for a customer
+export const markAllCustomerNotificationsAsRead = async (req, res) => {
+  const { customer_id } = req.params;
+  console.log('[markAllCustomerNotificationsAsRead] Called with customer_id:', customer_id);
+  if (!customer_id) {
+    return res.status(400).json({ error: 'customer_id is required' });
+  }
+  try {
+    const result = await client.query(
+      `UPDATE arrival_notifications
+       SET is_read = true
+       WHERE delivery_id IN (
+         SELECT d.delivery_id
+         FROM deliveries d
+         JOIN orders o ON d.order_id = o.order_id
+         JOIN carts c ON o.cart_id = c.cart_id
+         WHERE c.customer_id = $1
+       )
+       RETURNING *`,
+      [customer_id]
+    );
+    console.log('[markAllCustomerNotificationsAsRead] Updated:', result.rowCount);
+    res.json({ success: true, updated: result.rowCount });
+  } catch (err) {
+    console.error('[markAllCustomerNotificationsAsRead] Error:', err);
+    res.status(500).json({ error: 'Failed to mark all notifications as read' });
+  }
 }; 

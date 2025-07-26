@@ -262,15 +262,16 @@ const RiderHome: React.FC = () => {
 
   // Add confirmPayment function
   const confirmPayment = async (orderId: number) => {
+    if (!rider?.rider_id) return;
     try {
       const response = await fetch(`http://localhost:5001/api/rider/order/${orderId}/confirm-payment`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ paymentMethod: 'cash' }) // or allow selection
+        body: JSON.stringify({ paymentMethod: 'cash', riderId: rider.rider_id })
       });
       if (response.ok) {
         alert('Payment confirmed and delivery completed!');
-        if (rider?.rider_id) fetchRiderData(rider.rider_id);
+        fetchRiderData(rider.rider_id);
       } else {
         const error = await response.json();
         alert('Failed to confirm payment: ' + (error.error || 'Unknown error'));
@@ -319,6 +320,47 @@ const RiderHome: React.FC = () => {
       }
     } catch (error) {
       console.error('Error updating availability:', error);
+    }
+  };
+
+  const markAsFailed = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/status`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ delivery_status: 'failed', order_status: 'cancelled', riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Marked as failed and customer notified.');
+        fetchRiderData(rider.rider_id);
+      } else {
+        const error = await response.json();
+        alert('Failed to mark as failed: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error marking as failed:', error);
+      alert('Error marking as failed.');
+    }
+  };
+
+  const sendSuccessNotification = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/success-notification`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ message: 'Your order was delivered successfully! Thank you for shopping with us.', riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Success notification sent!');
+      } else {
+        const error = await response.json();
+        alert('Failed to send notification: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      alert('Error sending notification.');
     }
   };
 
@@ -439,7 +481,64 @@ const RiderHome: React.FC = () => {
                       <div>Amount: ৳{a.total_amount}</div>
                       {/* Action Buttons: Arrived or Confirm Payment */}
                       <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                        {a.delivery_status !== 'out_for_delivery' ? (
+                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
+                          <button
+                            onClick={() => markAsFailed(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #ff5858 0%, #f09819 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #ff585833',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            ❌ Mark as Failed
+                          </button>
+                        )}
+                        {a.delivery_status === 'out_for_delivery' && (
+                          <button
+                            onClick={() => confirmPayment(a.order_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
+                              color: '#333',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #ffd20033',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            💰 Mark as Delivered
+                          </button>
+                        )}
+                        {a.delivery_status === 'delivered' && (
+                          <button
+                            onClick={() => sendSuccessNotification(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #43cea233',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            🎉 Send Success Notification
+                          </button>
+                        )}
+                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' ? (
                           <button
                             onClick={() => markArrival(a.delivery_id)}
                             style={{
@@ -457,25 +556,7 @@ const RiderHome: React.FC = () => {
                           >
                             🚚 Mark Arrived
                           </button>
-                        ) : (
-                          <button
-                            onClick={() => confirmPayment(a.order_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
-                              color: '#333',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #ffd20033',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            💰 Confirm Payment
-                          </button>
-                        )}
+                        ) : null}
                       </div>
                     </li>
                   ))}

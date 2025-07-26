@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
+import ComplaintsAdminPage from './ComplaintsAdminPage';
 
 const navLinks = [
   { to: 'products', label: 'Manage Products' },
   { to: 'add-product', label: 'Add New Product' },
   { to: 'coupons', label: 'Manage Coupons' },
   { to: 'set-discount', label: 'Set Product Discount' },
+  { to: 'complaints', label: 'Manage Complaints' },
 ];
 
 const AdminDashboard: React.FC = () => {
