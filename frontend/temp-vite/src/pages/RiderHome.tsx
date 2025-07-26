@@ -1,5 +1,50 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  Grid,
+  Container,
+  AppBar,
+  Toolbar,
+  Avatar,
+  Chip,
+  List,
+  ListItem,
+  ListItemText,
+  Divider,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TextField,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Alert,
+  Paper,
+  Tabs,
+  Tab,
+  IconButton,
+  Badge
+} from '@mui/material';
+import {
+  LocationOn,
+  DirectionsBike,
+  Person,
+  Logout,
+  Refresh,
+  CheckCircle,
+  Cancel,
+  Payment,
+  Notifications,
+  Warning,
+  Info
+} from '@mui/icons-material';
 
 interface Rider {
   rider_id: number;
@@ -58,36 +103,47 @@ const RiderHome: React.FC = () => {
   useEffect(() => {
     const userStr = localStorage.getItem('user');
     const role = localStorage.getItem('role');
-    let user: Rider | null = null;
     
-    try {
-      user = userStr ? JSON.parse(userStr) : null;
-    } catch {
-      user = null;
+    console.log('User data from localStorage:', userStr);
+    console.log('Role from localStorage:', role);
+    
+    if (!userStr) {
+      console.log('No user data found, redirecting to login');
+      navigate('/login');
+      return;
     }
-    
-    if (!user || role !== 'rider') {
-      navigate('/');
-    } else {
+
+    try {
+      const user = JSON.parse(userStr);
+      console.log('Parsed user data:', user);
+      
+      // Check if user is a rider (either from user.role or localStorage role)
+      const isRider = user.role === 'rider' || role === 'rider';
+      
+      if (!isRider) {
+        console.log('User is not a rider, redirecting to login');
+        navigate('/login');
+        return;
+      }
+
+      console.log('User is a rider, fetching rider data');
+      const riderId = user.rider_id || user.id;
+      console.log('Using rider_id:', riderId);
+      
       setRider(user);
       setIsLoading(false);
-      setIsOnline(true);
+      setIsOnline(user.available || false);
       
       const storedZone = localStorage.getItem('currentZone');
       if (storedZone) {
         setCurrentZone(storedZone);
       }
       
-      if (user.rider_id) {
-        fetchRiderData(user.rider_id);
-      } else {
-        const storedUserId = localStorage.getItem('userId');
-        if (storedUserId) {
-          user.rider_id = Number(storedUserId);
-          setRider(user);
-          localStorage.setItem('user', JSON.stringify(user));
-        }
-      }
+      fetchRiderData(riderId);
+      fetchAvailableOrders();
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+      navigate('/login');
     }
   }, [navigate]);
 
@@ -100,28 +156,42 @@ const RiderHome: React.FC = () => {
   };
 
   const fetchRiderData = async (riderId: number) => {
+    console.log('Fetching rider data for rider_id:', riderId);
     try {
-      const assignmentsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/current-assignments`, {
+      const response = await fetch(`http://localhost:5001/api/rider/${riderId}/profile`, {
         headers: getAuthHeaders()
       });
-      if (assignmentsResponse.ok) {
-        const assignments = await assignmentsResponse.json();
-        setCurrentAssignments(assignments);
-      }
+
+      console.log('Rider data response status:', response.status);
       
-      const notificationsResponse = await fetch(`http://localhost:5001/api/rider/${riderId}/notifications`, {
-        headers: getAuthHeaders()
-      });
-      if (notificationsResponse.ok) {
-        const notifications = await notificationsResponse.json();
-        setNotifications(notifications);
+      if (response.ok) {
+        const riderData = await response.json();
+        console.log('Rider data received:', riderData);
+        setRider(riderData);
+        setIsOnline(riderData.available || false);
+      } else if (response.status === 404) {
+        console.error('Rider profile not found, status:', response.status);
+        // Create a basic rider object from user data
+        const userStr = localStorage.getItem('user');
+        const user = JSON.parse(userStr);
+        setRider({
+          rider_id: user.rider_id || user.id,
+          name: user.name || 'Rider',
+          email: user.email,
+          phone: user.phone || '',
+          vehicle_info: 'Vehicle information not available',
+          available: false
+        });
+      } else {
+        console.error('Failed to fetch rider data, status:', response.status);
       }
     } catch (error) {
       console.error('Error fetching rider data:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  // Fixed fetchAvailableOrders function
   const fetchAvailableOrders = async () => {
     if (!rider?.rider_id) {
       console.log('No rider ID, cannot fetch orders');
@@ -262,15 +332,16 @@ const RiderHome: React.FC = () => {
 
   // Add confirmPayment function
   const confirmPayment = async (orderId: number) => {
+    if (!rider?.rider_id) return;
     try {
       const response = await fetch(`http://localhost:5001/api/rider/order/${orderId}/confirm-payment`, {
         method: 'PUT',
         headers: getAuthHeaders(),
-        body: JSON.stringify({ paymentMethod: 'cash' }) // or allow selection
+        body: JSON.stringify({ paymentMethod: 'cash', riderId: rider.rider_id })
       });
       if (response.ok) {
         alert('Payment confirmed and delivery completed!');
-        if (rider?.rider_id) fetchRiderData(rider.rider_id);
+        fetchRiderData(rider.rider_id);
       } else {
         const error = await response.json();
         alert('Failed to confirm payment: ' + (error.error || 'Unknown error'));
@@ -322,340 +393,465 @@ const RiderHome: React.FC = () => {
     }
   };
 
+  const markAsFailed = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/status`, {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ delivery_status: 'failed', order_status: 'cancelled', riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Marked as failed and customer notified.');
+        fetchRiderData(rider.rider_id);
+      } else {
+        const error = await response.json();
+        alert('Failed to mark as failed: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error marking as failed:', error);
+      alert('Error marking as failed.');
+    }
+  };
+
+  const sendSuccessNotification = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/success-notification`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ message: 'Your order was delivered successfully! Thank you for shopping with us.', riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Success notification sent!');
+      } else {
+        const error = await response.json();
+        alert('Failed to send notification: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error sending notification:', error);
+      alert('Error sending notification.');
+    }
+  };
+
   if (isLoading) {
     return (
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '80vh' }}>
-        <div className="loading-spinner" />
-        <p>Loading rider dashboard...</p>
-      </div>
+      <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="80vh">
+        <Typography variant="h6">Loading rider dashboard...</Typography>
+      </Box>
     );
   }
 
   if (!rider) return null;
 
   return (
-    <div style={{ fontFamily: 'Inter, sans-serif', background: 'linear-gradient(135deg, #e0f7fa 0%, #fffde4 100%)', minHeight: '100vh' }}>
+    <Box sx={{ minHeight: '100vh', bgcolor: 'grey.50' }}>
       {/* Header */}
-      <header style={{ background: '#00796b', color: 'white', padding: '1rem 2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <div style={{ background: '#fff', color: '#00796b', borderRadius: '50%', width: 48, height: 48, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: 24 }}>
+      <AppBar position="static" sx={{ bgcolor: 'primary.dark' }}>
+        <Toolbar>
+          <Avatar sx={{ bgcolor: 'white', color: 'primary.dark', mr: 2 }}>
             {rider.name?.charAt(0).toUpperCase()}
-          </div>
-          <div>
-            <h2 style={{ margin: 0 }}>{rider.name}</h2>
-            <div style={{ fontSize: 14 }}>{rider.vehicle_info}</div>
-          </div>
-        </div>
-        <button onClick={handleLogout} style={{ background: '#fff', color: '#00796b', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: 'pointer' }}>
-          Logout
-        </button>
-      </header>
+          </Avatar>
+          <Box sx={{ flexGrow: 1 }}>
+            <Typography variant="h6">{rider.name}</Typography>
+            <Typography variant="body2" sx={{ display: 'flex', alignItems: 'center' }}>
+              <DirectionsBike sx={{ mr: 0.5, fontSize: 16 }} />
+              {rider.vehicle_info}
+            </Typography>
+          </Box>
+          <Button
+            variant="contained"
+            color="secondary"
+            startIcon={<Logout />}
+            onClick={handleLogout}
+          >
+            Logout
+          </Button>
+        </Toolbar>
+      </AppBar>
 
       {/* Navigation */}
-      <nav style={{ display: 'flex', justifyContent: 'center', gap: 24, background: '#e0f2f1', padding: '1rem 0' }}>
-        <button style={{ background: currentView === 'dashboard' ? '#00796b' : '#fff', color: currentView === 'dashboard' ? '#fff' : '#00796b', border: 'none', borderRadius: 6, padding: '0.5rem 1.5rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => setCurrentView('dashboard')}>
-          Dashboard
-        </button>
-        <button style={{ background: currentView === 'orders' ? '#00796b' : '#fff', color: currentView === 'orders' ? '#fff' : '#00796b', border: 'none', borderRadius: 6, padding: '0.5rem 1.5rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => setCurrentView('orders')}>
-          Orders
-        </button>
-        <button style={{ background: currentView === 'profile' ? '#00796b' : '#fff', color: currentView === 'profile' ? '#fff' : '#00796b', border: 'none', borderRadius: 6, padding: '0.5rem 1.5rem', fontWeight: 600, cursor: 'pointer' }} onClick={() => setCurrentView('profile')}>
-          Profile
-        </button>
-      </nav>
+      <Paper sx={{ bgcolor: 'primary.light', mb: 3 }}>
+        <Tabs
+          value={currentView}
+          onChange={(_, newValue) => setCurrentView(newValue)}
+          centered
+          sx={{ '& .MuiTab-root': { color: 'white' } }}
+        >
+          <Tab label="Dashboard" value="dashboard" />
+          <Tab label="Orders" value="orders" />
+          <Tab label="Profile" value="profile" />
+        </Tabs>
+      </Paper>
 
       {/* Main Content */}
-      <main style={{ maxWidth: 1100, margin: '2rem auto', padding: '0 1rem' }}>
+      <Container maxWidth="lg" sx={{ py: 3 }}>
         {currentView === 'dashboard' && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 32 }}>
+          <Grid container spacing={3}>
             {/* Status Card */}
-            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24 }}>
-              <h3 style={{ marginTop: 0 }}>Current Status</h3>
-              <div style={{ marginBottom: 12 }}>
-                <strong>Zone:</strong> {currentZone || 'Not set'} 
-                <button 
-                  style={{ marginLeft: 8, padding: '2px 8px', borderRadius: 4, border: '1px solid #00796b', background: '#e0f2f1', color: '#00796b', fontWeight: 600, cursor: 'pointer' }} 
-                  onClick={() => setShowZoneModal(true)}
-                >
-                  {currentZone ? 'Change' : 'Set'}
-                </button>
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <strong>Online:</strong> {isOnline ? 'Yes' : 'No'}
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <strong>Active Deliveries:</strong> {currentAssignments.length}
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <strong>Notifications:</strong> {notifications.length}
-              </div>
-              <div style={{ marginBottom: 12 }}>
-                <strong>Availability:</strong> {rider.available ? 'Available' : 'Unavailable'}
-                <button 
-                  onClick={toggleAvailability} 
-                  style={{ 
-                    marginLeft: 12, 
-                    padding: '4px 12px', 
-                    borderRadius: 4, 
-                    border: 'none', 
-                    background: rider.available ? '#10b981' : '#f59e0b', 
-                    color: '#fff', 
-                    fontWeight: 600, 
-                    cursor: 'pointer' 
-                  }}
-                >
-                  {rider.available ? 'Set Unavailable' : 'Set Available'}
-                </button>
-              </div>
-              <button 
-                onClick={getCurrentLocation}
-                style={{ 
-                  marginTop: 12, 
-                  padding: '8px 16px', 
-                  borderRadius: 6, 
-                  border: 'none', 
-                  background: '#00796b', 
-                  color: '#fff', 
-                  fontWeight: 600, 
-                  cursor: 'pointer' 
-                }}
-              >
-                📍 Set Location
-              </button>
-            </div>
+            <Grid item xs={12} md={4}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Current Status
+                  </Typography>
+                  
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Zone: {currentZone || 'Not set'}
+                    </Typography>
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      onClick={() => setShowZoneModal(true)}
+                      sx={{ mt: 1 }}
+                    >
+                      {currentZone ? 'Change' : 'Set'}
+                    </Button>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Online: {isOnline ? 'Yes' : 'No'}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Active Deliveries: {currentAssignments.length}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Notifications: {notifications.length}
+                    </Typography>
+                  </Box>
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography variant="body2" color="text.secondary">
+                      Availability: {rider.available ? 'Available' : 'Unavailable'}
+                    </Typography>
+                    <Button
+                      variant="contained"
+                      color={rider.available ? 'error' : 'success'}
+                      size="small"
+                      onClick={toggleAvailability}
+                      sx={{ mt: 1 }}
+                    >
+                      {rider.available ? 'Set Unavailable' : 'Set Available'}
+                    </Button>
+                  </Box>
+
+                  <Button
+                    variant="contained"
+                    startIcon={<LocationOn />}
+                    onClick={getCurrentLocation}
+                    fullWidth
+                  >
+                    Set Location
+                  </Button>
+                </CardContent>
+              </Card>
+            </Grid>
             
             {/* Assignments Card */}
-            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, gridColumn: 'span 2' }}>
-              <h3 style={{ marginTop: 0 }}>Current Deliveries</h3>
-              {currentAssignments.length === 0 ? (
-                <p>No active deliveries</p>
-              ) : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {currentAssignments.map(a => (
-                    <li key={a.delivery_id} style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
-                      <div><strong>Order #{a.order_id}</strong> - {a.delivery_status}</div>
-                      <div>Customer: {a.customer_name}</div>
-                      <div>Address: {a.address_line}</div>
-                      <div>Amount: ৳{a.total_amount}</div>
-                      {/* Action Buttons: Arrived or Confirm Payment */}
-                      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                        {a.delivery_status !== 'out_for_delivery' ? (
-                          <button
-                            onClick={() => markArrival(a.delivery_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #43cea233',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            🚚 Mark Arrived
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => confirmPayment(a.order_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
-                              color: '#333',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #ffd20033',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            💰 Confirm Payment
-                          </button>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
+            <Grid item xs={12} md={8}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Current Deliveries
+                  </Typography>
+                  
+                  {currentAssignments.length === 0 ? (
+                    <Typography color="text.secondary">
+                      No active deliveries
+                    </Typography>
+                  ) : (
+                    <List>
+                      {currentAssignments.map((assignment, index) => (
+                        <Box key={assignment.delivery_id}>
+                          <ListItem>
+                            <ListItemText
+                              primary={`Order #${assignment.order_id} - ${assignment.delivery_status}`}
+                              secondary={
+                                <Box>
+                                  <Typography variant="body2">
+                                    Customer: {assignment.customer_name}
+                                  </Typography>
+                                  <Typography variant="body2">
+                                    Address: {assignment.address_line}
+                                  </Typography>
+                                  <Typography variant="body2">
+                                    Amount: ৳{assignment.total_amount}
+                                  </Typography>
+                                </Box>
+                              }
+                            />
+                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                              {assignment.delivery_status !== 'out_for_delivery' && 
+                               assignment.delivery_status !== 'failed' && 
+                               assignment.delivery_status !== 'delivered' && (
+                                <Button
+                                  variant="contained"
+                                  color="error"
+                                  size="small"
+                                  startIcon={<Cancel />}
+                                  onClick={() => markAsFailed(assignment.delivery_id)}
+                                >
+                                  Mark as Failed
+                                </Button>
+                              )}
+                              
+                              {assignment.delivery_status === 'out_for_delivery' && (
+                                <Button
+                                  variant="contained"
+                                  color="warning"
+                                  size="small"
+                                  startIcon={<Payment />}
+                                  onClick={() => confirmPayment(assignment.order_id)}
+                                >
+                                  Mark as Delivered
+                                </Button>
+                              )}
+                              
+                              {assignment.delivery_status === 'delivered' && (
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  size="small"
+                                  startIcon={<Notifications />}
+                                  onClick={() => sendSuccessNotification(assignment.delivery_id)}
+                                >
+                                  Send Success Notification
+                                </Button>
+                              )}
+                              
+                              {assignment.delivery_status !== 'out_for_delivery' && 
+                               assignment.delivery_status !== 'failed' && 
+                               assignment.delivery_status !== 'delivered' && (
+                                <Button
+                                  variant="contained"
+                                  color="primary"
+                                  size="small"
+                                  startIcon={<CheckCircle />}
+                                  onClick={() => markArrival(assignment.delivery_id)}
+                                >
+                                  Mark Arrived
+                                </Button>
+                              )}
+                            </Box>
+                          </ListItem>
+                          {index < currentAssignments.length - 1 && <Divider />}
+                        </Box>
+                      ))}
+                    </List>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
         )}
         
         {currentView === 'orders' && (
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24 }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-              <h3 style={{ margin: 0 }}>Available Orders</h3>
-              <button 
-                onClick={fetchAvailableOrders} 
-                style={{ 
-                  background: '#00796b', 
-                  color: '#fff', 
-                  border: 'none', 
-                  borderRadius: 6, 
-                  padding: '0.5rem 1rem', 
-                  fontWeight: 600, 
-                  cursor: 'pointer' 
-                }}
-              >
-                🔄 Refresh
-              </button>
-            </div>
-            
-            {!rider.available && (
-              <div style={{ 
-                background: '#fff3cd', 
-                border: '1px solid #ffeaa7', 
-                borderRadius: 6, 
-                padding: '12px', 
-                marginBottom: 16, 
-                color: '#856404' 
-              }}>
-                ⚠️ You are currently unavailable. Set yourself as available to see orders.
-              </div>
-            )}
-            
-            {!currentZone && (
-              <div style={{ 
-                background: '#f8d7da', 
-                border: '1px solid #f5c6cb', 
-                borderRadius: 6, 
-                padding: '12px', 
-                marginBottom: 16, 
-                color: '#721c24' 
-              }}>
-                ⚠️ Please set your zone to see available orders.
-              </div>
-            )}
-            
-            {availableOrders.length === 0 ? (
-              <p>No orders available in your zone.</p>
-            ) : (
-              <ul style={{ listStyle: 'none', padding: 0 }}>
-                {availableOrders.map(order => (
-                  <li key={order.delivery_id} style={{ marginBottom: 16, border: '1px solid #eee', borderRadius: 8, padding: 16 }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-                      <strong>Order #{order.order_id}</strong>
-                      <span style={{ fontWeight: 600, color: '#00796b' }}>৳{order.total_amount}</span>
-                    </div>
-                    <div style={{ marginBottom: 4 }}>Customer: {order.customer_name} ({order.customer_phone})</div>
-                    <div style={{ marginBottom: 4 }}>Address: {order.address_line}</div>
-                    <div style={{ marginBottom: 12 }}>Zone: {order.zone_name}</div>
-                    <button 
-                      onClick={() => acceptOrder(order.delivery_id)}
-                      style={{ 
-                        background: '#10b981', 
-                        color: '#fff', 
-                        border: 'none', 
-                        borderRadius: 6, 
-                        padding: '0.5rem 1rem', 
-                        fontWeight: 600, 
-                        cursor: 'pointer' 
-                      }}
-                    >
-                      ✅ Accept Order
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <Card>
+            <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                <Typography variant="h6">
+                  Available Orders
+                </Typography>
+                <Button
+                  variant="outlined"
+                  startIcon={<Refresh />}
+                  onClick={fetchAvailableOrders}
+                >
+                  Refresh
+                </Button>
+              </Box>
+              
+              {!rider.available && (
+                <Alert severity="warning" sx={{ mb: 2 }}>
+                  You are currently unavailable. Set yourself as available to see orders.
+                </Alert>
+              )}
+              
+              {!currentZone && (
+                <Alert severity="error" sx={{ mb: 2 }}>
+                  Please set your zone to see available orders.
+                </Alert>
+              )}
+              
+              {availableOrders.length === 0 ? (
+                <Typography color="text.secondary">
+                  No orders available in your zone.
+                </Typography>
+              ) : (
+                <List>
+                  {availableOrders.map((order, index) => (
+                    <Box key={order.delivery_id}>
+                      <ListItem>
+                        <ListItemText
+                          primary={
+                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Typography variant="h6">
+                                Order #{order.order_id}
+                              </Typography>
+                              <Typography variant="h6" color="primary">
+                                ৳{order.total_amount}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            <Box>
+                              <Typography variant="body2">
+                                Customer: {order.customer_name} ({order.customer_phone})
+                              </Typography>
+                              <Typography variant="body2">
+                                Address: {order.address_line}
+                              </Typography>
+                              <Typography variant="body2">
+                                Zone: {order.zone_name}
+                              </Typography>
+                            </Box>
+                          }
+                        />
+                        <Button
+                          variant="contained"
+                          color="success"
+                          startIcon={<CheckCircle />}
+                          onClick={() => acceptOrder(order.delivery_id)}
+                        >
+                          Accept Order
+                        </Button>
+                      </ListItem>
+                      {index < availableOrders.length - 1 && <Divider />}
+                    </Box>
+                  ))}
+                </List>
+              )}
+            </CardContent>
+          </Card>
         )}
         
         {currentView === 'profile' && rider && (
-          <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, maxWidth: 500, margin: '0 auto' }}>
-            <h3>Rider Profile</h3>
-            <div style={{ marginBottom: 8 }}><strong>Name:</strong> {rider.name}</div>
-            <div style={{ marginBottom: 8 }}><strong>Email:</strong> {rider.email}</div>
-            <div style={{ marginBottom: 8 }}><strong>Phone:</strong> {rider.phone}</div>
-            <div style={{ marginBottom: 8 }}><strong>Vehicle:</strong> {rider.vehicle_info}</div>
-            <div style={{ marginBottom: 8 }}><strong>Status:</strong> {rider.available ? 'Available' : 'Unavailable'}</div>
-          </div>
+          <Card sx={{ maxWidth: 500, mx: 'auto' }}>
+            <CardContent>
+              <Typography variant="h6" gutterBottom>
+                Rider Profile
+              </Typography>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Name:</strong> {rider.name}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Email:</strong> {rider.email}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Phone:</strong> {rider.phone}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Vehicle:</strong> {rider.vehicle_info}
+                </Typography>
+              </Box>
+              
+              <Box sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  <strong>Status:</strong> {rider.available ? 'Available' : 'Unavailable'}
+                </Typography>
+              </Box>
+            </CardContent>
+          </Card>
         )}
-      </main>
+      </Container>
 
       {/* Zone Selection Modal */}
-      {showZoneModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 320, boxShadow: '0 2px 16px #0002' }}>
-            <h3>Select Your Zone</h3>
-            <select 
-              value={currentZone} 
-              onChange={e => setCurrentZone(e.target.value)} 
-              style={{ width: '100%', padding: 8, margin: '16px 0', borderRadius: 6, border: '1px solid #ccc' }}
+      <Dialog open={showZoneModal} onClose={() => setShowZoneModal(false)}>
+        <DialogTitle>Select Your Zone</DialogTitle>
+        <DialogContent>
+          <FormControl fullWidth sx={{ mt: 2 }}>
+            <InputLabel>Zone</InputLabel>
+            <Select
+              value={currentZone}
+              onChange={(e) => setCurrentZone(e.target.value)}
+              label="Zone"
             >
-              <option value="">Select Zone</option>
               {ZONE_OPTIONS.map(zone => (
-                <option key={zone} value={zone}>{zone}</option>
+                <MenuItem key={zone} value={zone}>{zone}</MenuItem>
               ))}
-            </select>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button 
-                onClick={() => setShowZoneModal(false)} 
-                style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={() => handleSetZone(currentZone)} 
-                disabled={!currentZone}
-                style={{ background: currentZone ? '#00796b' : '#ccc', color: '#fff', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: currentZone ? 'pointer' : 'not-allowed' }}
-              >
-                Set Zone
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+            </Select>
+          </FormControl>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowZoneModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={() => handleSetZone(currentZone)}
+            disabled={!currentZone}
+          >
+            Set Zone
+          </Button>
+        </DialogActions>
+      </Dialog>
 
       {/* Location Modal */}
-      {showLocationModal && (
-        <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', background: 'rgba(0,0,0,0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000 }}>
-          <div style={{ background: '#fff', borderRadius: 12, padding: 32, minWidth: 400, boxShadow: '0 2px 16px #0002' }}>
-            <h3>Set Your Location & Zone</h3>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 4 }}>Latitude:</label>
-              <input type="text" value={location?.latitude || ''} readOnly style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }} />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 4 }}>Longitude:</label>
-              <input type="text" value={location?.longitude || ''} readOnly style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }} />
-            </div>
-            <div style={{ marginBottom: 16 }}>
-              <label style={{ display: 'block', marginBottom: 4 }}>Zone:</label>
-              <select
+      <Dialog open={showLocationModal} onClose={() => setShowLocationModal(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Set Your Location & Zone</DialogTitle>
+        <DialogContent>
+          <Box sx={{ mt: 2 }}>
+            <TextField
+              fullWidth
+              label="Latitude"
+              value={location?.latitude || ''}
+              InputProps={{ readOnly: true }}
+              sx={{ mb: 2 }}
+            />
+            <TextField
+              fullWidth
+              label="Longitude"
+              value={location?.longitude || ''}
+              InputProps={{ readOnly: true }}
+              sx={{ mb: 2 }}
+            />
+            <FormControl fullWidth>
+              <InputLabel>Zone</InputLabel>
+              <Select
                 value={currentZone}
-                onChange={e => setCurrentZone(e.target.value)}
-                style={{ width: '100%', padding: 8, borderRadius: 4, border: '1px solid #ccc' }}
+                onChange={(e) => setCurrentZone(e.target.value)}
+                label="Zone"
               >
-                <option value="">Select Zone</option>
                 {ZONE_OPTIONS.map(zone => (
-                  <option key={zone} value={zone}>{zone}</option>
+                  <MenuItem key={zone} value={zone}>{zone}</MenuItem>
                 ))}
-              </select>
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
-              <button 
-                onClick={() => setShowLocationModal(false)} 
-                style={{ background: '#eee', color: '#333', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: 'pointer' }}
-              >
-                Cancel
-              </button>
-              <button 
-                onClick={updateLocation} 
-                disabled={!currentZone}
-                style={{ background: currentZone ? '#00796b' : '#ccc', color: '#fff', border: 'none', borderRadius: 6, padding: '0.5rem 1.2rem', fontWeight: 600, cursor: currentZone ? 'pointer' : 'not-allowed' }}
-              >
-                Update Location
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setShowLocationModal(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={updateLocation}
+            disabled={!currentZone}
+          >
+            Update Location
+          </Button>
+        </DialogActions>
+      </Dialog>
+    </Box>
   );
 };
 
