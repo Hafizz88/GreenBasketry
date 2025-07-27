@@ -9,6 +9,8 @@ interface ProductForm {
   description: string;
   discount_percentage: string;
   vat_percentage: string;
+  discount_started: string;
+  discount_finished: string;
 }
 
 const getAuthHeader = () => {
@@ -30,6 +32,8 @@ const AddProduct: React.FC = () => {
     description: '',
     discount_percentage: '',
     vat_percentage: '',
+    discount_started: '',
+    discount_finished: '',
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -89,6 +93,8 @@ const AddProduct: React.FC = () => {
       formData.append('description', form.description);
       formData.append('discount_percentage', form.discount_percentage);
       formData.append('vat_percentage', form.vat_percentage);
+      formData.append('discount_started', form.discount_started);
+      formData.append('discount_finished', form.discount_finished);
       formData.append('image', selectedImage);
 
       await axios.post(
@@ -105,7 +111,9 @@ const AddProduct: React.FC = () => {
         stock: '', 
         description: '', 
         discount_percentage: '', 
-        vat_percentage: '' 
+        vat_percentage: '',
+        discount_started: '',
+        discount_finished: '',
       });
       setSelectedImage(null);
       setImagePreview(null);
@@ -215,6 +223,29 @@ const AddProduct: React.FC = () => {
               placeholder="0.00" 
               value={form.vat_percentage} 
               onChange={handleChange} 
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Discount Start Date</label>
+            <input
+              name="discount_started"
+              type="date"
+              value={form.discount_started}
+              onChange={handleChange}
+              style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+            />
+          </div>
+          <div>
+            <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Discount End Date</label>
+            <input
+              name="discount_finished"
+              type="date"
+              value={form.discount_finished}
+              onChange={handleChange}
               style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
             />
           </div>

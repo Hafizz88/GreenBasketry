@@ -12,14 +12,15 @@ import {
   getRiderOrders,
   getOrdersByZone,
   assignDeliveryToRider,
-  updateDeliveryStatus,
+  updateDeliveryAndOrderStatus,
   getRiderProfile,
   updateRiderAvailability,
   getRiderDeliveryStats,
   createArrivalNotification,
   getRiderNotifications,
   markNotificationAsRead,
-  getAvailableRiders
+  getAvailableRiders,
+  sendSuccessNotification
 } from '../controllers/riderController.js';
 
 const router = express.Router();
@@ -45,9 +46,10 @@ router.get('/orders/zone/:zone', verifyToken, getOrdersByZone);
 
 // Delivery Management
 router.post('/assign-delivery', verifyToken, assignDeliveryToRider);
-router.put('/delivery/:deliveryId/status', verifyToken, updateDeliveryStatus);
+router.put('/delivery/:deliveryId/status', verifyToken, updateDeliveryAndOrderStatus);
 router.put('/delivery/:deliveryId/set-time', verifyToken, setDeliveryTime);
 router.put('/delivery/:deliveryId/arrival', verifyToken, markArrival);
+router.post('/delivery/:deliveryId/success-notification', verifyToken, sendSuccessNotification);
 
 // Payment & Order Completion
 router.put('/order/:orderId/confirm-payment', verifyToken, confirmPaymentReceived);

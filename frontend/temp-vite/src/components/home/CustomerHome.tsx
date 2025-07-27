@@ -26,6 +26,25 @@ interface Product {
   image_url?: string;
   thumbnail?: string;
   total_times_purchased?: number;
+  times_ordered?: number;
+  discount_percentage?: number;
+  points_rewarded?: number;
+  stock?: number;
+  description?: string;
+}
+
+interface CustomerHomeData {
+  customerZone: string;
+  wishlist: Product[];
+  previousOrders: Product[];
+  topSellingInZone: Product[];
+  recentOrders: any[];
+  customerStats: {
+    points_earned: number;
+    points_used: number;
+    total_orders: number;
+    wishlist_count: number;
+  };
 }
 
 interface CustomerHomeProps {
@@ -47,6 +66,8 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   const brandRef = useRef<HTMLSpanElement>(null);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [customerHomeData, setCustomerHomeData] = useState<CustomerHomeData | null>(null);
+  const [loadingHomeData, setLoadingHomeData] = useState(false);
 
   const getAuthHeader = () => {
     const token = localStorage.getItem('token');
@@ -84,6 +105,32 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
     type();
     
     return () => clearTimeout(timeout);
+  }, []);
+
+  // Fetch personalized customer home data
+  useEffect(() => {
+    const fetchCustomerHomeData = async () => {
+      if (!isLoggedIn()) return;
+      
+      setLoadingHomeData(true);
+      try {
+        const userId = localStorage.getItem('userId');
+        const response = await axios.get(`http://localhost:5001/api/customer-home/${userId}/home-data`, getAuthHeader());
+        setCustomerHomeData(response.data);
+        console.log('🏠 Customer home data loaded:', response.data);
+      } catch (error) {
+        console.error('Error fetching customer home data:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load personalized data",
+          variant: "destructive",
+        });
+      } finally {
+        setLoadingHomeData(false);
+      }
+    };
+
+    fetchCustomerHomeData();
   }, []);
 
   // Fetch categories
@@ -197,7 +244,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
     const customerId = localStorage.getItem('userId');
     if (!customerId) return;
     try {
-      const response = await axios.get(`http://localhost:5000/api/notifications/customer/${customerId}`);
+      const response = await axios.get(`http://localhost:5001/api/notifications/customer/${customerId}`);
       setNotifications(response.data.notifications || []);
     } catch (err) {
       console.error('Failed to fetch notifications', err);
@@ -207,7 +254,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
   // Mark notification as read
   const markAsRead = async (notification_id: number) => {
     try {
-      await axios.patch(`http://localhost:5000/api/notifications/${notification_id}/read`);
+      await axios.patch(`http://localhost:5001/api/notifications/${notification_id}/read`);
       setNotifications((prev) => prev.map(n => n.notification_id === notification_id ? { ...n, is_read: true } : n));
     } catch (err) {
       console.error('Failed to mark notification as read', err);
@@ -219,7 +266,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
     try {
       const customerId = localStorage.getItem('userId');
       if (!customerId) return;
-      await axios.patch(`http://localhost:5000/api/notifications/customer/${customerId}/mark-all-read`);
+      await axios.patch(`http://localhost:5001/api/notifications/customer/${customerId}/mark-all-read`);
       setNotifications((prev) => prev.map(n => ({ ...n, is_read: true })));
       toast({
         title: 'All Notifications Marked as Read',
@@ -343,7 +390,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
       title: "Logged Out",
       description: "You have been successfully logged out.",
     });
-    navigate('/');
+    navigate('/login'); // Changed from '/' to '/login'
   };
 
   const getDisplayedProducts = () => {
@@ -496,6 +543,14 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
                     <User className="h-5 w-5" />
                   </Button>
                   
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    onClick={() => navigate('/complaints')}
+                    className="hidden sm:flex"
+                  >
+                    📝 File a Complaint
+                  </Button>
                   <Button 
                     variant="outline" 
                     size="sm"
@@ -689,27 +744,233 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
               </div>
             )}
 
-            {/* Empty State */}
+            {/* Personalized Content or Empty State */}
             {!loading && displayedProducts.length === 0 && (
-              <div className="text-center py-12">
-                <div className="w-24 h-24 mx-auto mb-4 bg-gradient-secondary rounded-full flex items-center justify-center">
-                  <Search className="h-8 w-8 text-secondary-foreground" />
-                </div>
-                <h3 className="text-lg font-semibold text-foreground mb-2">
-                  {searchTerm 
-                    ? 'No products found'
-                    : activeTab === 'top-selling'
-                    ? 'No top selling products yet'
-                    : 'No products in this category'
-                  }
-                </h3>
-                <p className="text-muted-foreground">
-                  {searchTerm 
-                    ? 'Try adjusting your search terms or browse our categories.'
-                    : 'Check back later for new additions!'
-                  }
-                </p>
-              </div>
+              <>
+                {!selectedCategory && !searchTerm && customerHomeData && !loadingHomeData ? (
+                  <div className="space-y-8">
+                    {/* Customer Stats */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                      <Card className="bg-gradient-to-r from-blue-50 to-blue-100 border-blue-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">৳</span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-blue-600">Points Earned</p>
+                              <p className="text-xl font-bold text-blue-800">{customerHomeData.customerStats.points_earned}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-green-50 to-green-100 border-green-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">📦</span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-green-600">Total Orders</p>
+                              <p className="text-xl font-bold text-green-800">{customerHomeData.customerStats.total_orders}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-purple-50 to-purple-100 border-purple-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-purple-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">❤️</span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-purple-600">Wishlist Items</p>
+                              <p className="text-xl font-bold text-purple-800">{customerHomeData.customerStats.wishlist_count}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-gradient-to-r from-orange-50 to-orange-100 border-orange-200">
+                        <CardContent className="p-4">
+                          <div className="flex items-center space-x-2">
+                            <div className="w-8 h-8 bg-orange-500 rounded-full flex items-center justify-center">
+                              <span className="text-white text-sm font-bold">📍</span>
+                            </div>
+                            <div>
+                              <p className="text-sm text-orange-600">Your Zone</p>
+                              <p className="text-xl font-bold text-orange-800">{customerHomeData.customerZone}</p>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+                    </div>
+
+                    {/* Wishlist Section */}
+                    {customerHomeData.wishlist.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <Heart className="h-6 w-6 text-red-500" />
+                          <h2 className="text-2xl font-bold text-foreground">Your Wishlist</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {customerHomeData.wishlist.map((product) => (
+                            <Card key={product.product_id} className="group hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0 bg-gradient-card overflow-hidden">
+                              <CardContent className="p-0">
+                                <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                  <img
+                                    src={product.image_url || '/placeholder.svg'}
+                                    alt={product.name || 'Product'}
+                                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                                  />
+                                  <Badge className="absolute top-2 left-2 bg-red-500 text-white">
+                                    ❤️ Wishlist
+                                  </Badge>
+                                </div>
+                                <div className="p-4">
+                                  <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                    {product.name || 'No Title'}
+                                  </h3>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="text-2xl font-bold text-primary">
+                                      ৳{product.price || 'N/A'}
+                                    </span>
+                                    <Button
+                                      variant="cart"
+                                      size="sm"
+                                      onClick={() => handleAddToCart(product.product_id || 0)}
+                                      className="text-xs px-3"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Previous Orders Section */}
+                    {customerHomeData.previousOrders.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">🔄</span>
+                          <h2 className="text-2xl font-bold text-foreground">Previously Ordered</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {customerHomeData.previousOrders.map((product) => (
+                            <Card key={product.product_id} className="group hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0 bg-gradient-card overflow-hidden">
+                              <CardContent className="p-0">
+                                <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                  <img
+                                    src={product.image_url || '/placeholder.svg'}
+                                    alt={product.name || 'Product'}
+                                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                                  />
+                                  <Badge className="absolute top-2 left-2 bg-blue-500 text-white">
+                                    🔄 Reorder
+                                  </Badge>
+                                </div>
+                                <div className="p-4">
+                                  <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                    {product.name || 'No Title'}
+                                  </h3>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="text-2xl font-bold text-primary">
+                                      ৳{product.price || 'N/A'}
+                                    </span>
+                                    <Button
+                                      variant="cart"
+                                      size="sm"
+                                      onClick={() => handleAddToCart(product.product_id || 0)}
+                                      className="text-xs px-3"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Top Selling in Zone Section */}
+                    {customerHomeData.topSellingInZone.length > 0 && (
+                      <div className="space-y-4">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-2xl">🔥</span>
+                          <h2 className="text-2xl font-bold text-foreground">Popular in {customerHomeData.customerZone}</h2>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                          {customerHomeData.topSellingInZone.map((product) => (
+                            <Card key={product.product_id} className="group hover:shadow-card-hover transition-all duration-300 hover:scale-105 border-0 bg-gradient-card overflow-hidden">
+                              <CardContent className="p-0">
+                                <div className="relative overflow-hidden cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                  <img
+                                    src={product.image_url || '/placeholder.svg'}
+                                    alt={product.name || 'Product'}
+                                    className="w-full h-48 object-cover transition-transform duration-300 group-hover:scale-110"
+                                  />
+                                  <Badge className="absolute top-2 left-2 bg-orange-500 text-white">
+                                    🔥 {product.times_ordered} sold
+                                  </Badge>
+                                </div>
+                                <div className="p-4">
+                                  <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer" onClick={() => navigate(`/product/${product.product_id}`)}>
+                                    {product.name || 'No Title'}
+                                  </h3>
+                                  <div className="flex items-center justify-between mt-2">
+                                    <span className="text-2xl font-bold text-primary">
+                                      ৳{product.price || 'N/A'}
+                                    </span>
+                                    <Button
+                                      variant="cart"
+                                      size="sm"
+                                      onClick={() => handleAddToCart(product.product_id || 0)}
+                                      className="text-xs px-3"
+                                    >
+                                      <Plus className="h-3 w-3 mr-1" />
+                                      Add
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardContent>
+                            </Card>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="w-24 h-24 mx-auto mb-4 bg-gradient-secondary rounded-full flex items-center justify-center">
+                      <Search className="h-8 w-8 text-secondary-foreground" />
+                    </div>
+                    <h3 className="text-lg font-semibold text-foreground mb-2">
+                      {searchTerm 
+                        ? 'No products found'
+                        : activeTab === 'top-selling'
+                        ? 'No top selling products yet'
+                        : 'No products in this category'
+                      }
+                    </h3>
+                    <p className="text-muted-foreground">
+                      {searchTerm 
+                        ? 'Try adjusting your search terms or browse our categories.'
+                        : 'Check back later for new additions!'
+                      }
+                    </p>
+                  </div>
+                )}
+              </>
             )}
           </div>
         </main>

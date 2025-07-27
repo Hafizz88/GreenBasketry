@@ -556,100 +556,102 @@ const RiderHome: React.FC = () => {
             </Grid>
             
             {/* Assignments Card */}
-            <Grid item xs={12} md={8}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Current Deliveries
-                  </Typography>
-                  
-                  {currentAssignments.length === 0 ? (
-                    <Typography color="text.secondary">
-                      No active deliveries
-                    </Typography>
-                  ) : (
-                    <List>
-                      {currentAssignments.map((assignment, index) => (
-                        <Box key={assignment.delivery_id}>
-                          <ListItem>
-                            <ListItemText
-                              primary={`Order #${assignment.order_id} - ${assignment.delivery_status}`}
-                              secondary={
-                                <Box>
-                                  <Typography variant="body2">
-                                    Customer: {assignment.customer_name}
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    Address: {assignment.address_line}
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    Amount: ৳{assignment.total_amount}
-                                  </Typography>
-                                </Box>
-                              }
-                            />
-                            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                              {assignment.delivery_status !== 'out_for_delivery' && 
-                               assignment.delivery_status !== 'failed' && 
-                               assignment.delivery_status !== 'delivered' && (
-                                <Button
-                                  variant="contained"
-                                  color="error"
-                                  size="small"
-                                  startIcon={<Cancel />}
-                                  onClick={() => markAsFailed(assignment.delivery_id)}
-                                >
-                                  Mark as Failed
-                                </Button>
-                              )}
-                              
-                              {assignment.delivery_status === 'out_for_delivery' && (
-                                <Button
-                                  variant="contained"
-                                  color="warning"
-                                  size="small"
-                                  startIcon={<Payment />}
-                                  onClick={() => confirmPayment(assignment.order_id)}
-                                >
-                                  Mark as Delivered
-                                </Button>
-                              )}
-                              
-                              {assignment.delivery_status === 'delivered' && (
-                                <Button
-                                  variant="contained"
-                                  color="success"
-                                  size="small"
-                                  startIcon={<Notifications />}
-                                  onClick={() => sendSuccessNotification(assignment.delivery_id)}
-                                >
-                                  Send Success Notification
-                                </Button>
-                              )}
-                              
-                              {assignment.delivery_status !== 'out_for_delivery' && 
-                               assignment.delivery_status !== 'failed' && 
-                               assignment.delivery_status !== 'delivered' && (
-                                <Button
-                                  variant="contained"
-                                  color="primary"
-                                  size="small"
-                                  startIcon={<CheckCircle />}
-                                  onClick={() => markArrival(assignment.delivery_id)}
-                                >
-                                  Mark Arrived
-                                </Button>
-                              )}
-                            </Box>
-                          </ListItem>
-                          {index < currentAssignments.length - 1 && <Divider />}
-                        </Box>
-                      ))}
-                    </List>
-                  )}
-                </CardContent>
-              </Card>
-            </Grid>
+            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, gridColumn: 'span 2' }}>
+              <h3 style={{ marginTop: 0 }}>Current Deliveries</h3>
+              {currentAssignments.length === 0 ? (
+                <p>No active deliveries</p>
+              ) : (
+                <ul style={{ listStyle: 'none', padding: 0 }}>
+                  {currentAssignments.map(a => (
+                    <li key={a.delivery_id} style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
+                      <div><strong>Order #{a.order_id}</strong> - {a.delivery_status}</div>
+                      <div>Customer: {a.customer_name}</div>
+                      <div>Address: {a.address_line}</div>
+                      <div>Amount: ৳{a.total_amount}</div>
+                      {/* Action Buttons: Arrived or Confirm Payment */}
+                      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
+                          <button
+                            onClick={() => markAsFailed(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #ff5858 0%, #f09819 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #ff585833',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            ❌ Mark as Failed
+                          </button>
+                        )}
+                        {a.delivery_status === 'out_for_delivery' && (
+                          <button
+                            onClick={() => confirmPayment(a.order_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
+                              color: '#333',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #ffd20033',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            💰 Mark as Delivered
+                          </button>
+                        )}
+                        {a.delivery_status === 'delivered' && (
+                          <button
+                            onClick={() => sendSuccessNotification(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #43cea233',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            🎉 Send Success Notification
+                          </button>
+                        )}
+                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' ? (
+                          <button
+                            onClick={() => markArrival(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #43cea233',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            🚚 Mark Arrived
+                          </button>
+                        ) : null}
+                      </div>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
           </Grid>
         )}
         

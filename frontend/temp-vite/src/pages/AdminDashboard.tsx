@@ -1,7 +1,5 @@
 import React from 'react';
 import { Link, Outlet, useLocation } from 'react-router-dom';
-import { ThemeProvider, createTheme } from '@mui/material/styles';
-import CssBaseline from '@mui/material/CssBaseline';
 import {
   Box,
   Drawer,
@@ -15,76 +13,53 @@ import {
   ListItemButton,
   ListItemIcon,
   ListItemText,
-  Paper,
-  Container,
-  Card,
-  CardContent,
   Avatar,
-  Chip,
+  Container,
   useTheme,
   useMediaQuery,
+  ThemeProvider,
+  createTheme,
+  CssBaseline,
+  Card,
+  CardContent,
+  Grid,
+  Paper,
+  Chip
 } from '@mui/material';
+import {
+  Menu as MenuIcon,
+  Dashboard as DashboardIcon,
+  Inventory as InventoryIcon,
+  Add as AddIcon,
+  LocalOffer as CouponsIcon,
+  Discount as DiscountIcon,
+  AdminPanelSettings as AdminIcon,
+  TrendingUp as TrendingUpIcon,
+  ShoppingCart as OrdersIcon,
+  People as CustomersIcon,
+  Report as ComplaintsIcon
+} from '@mui/icons-material';
+import ComplaintsAdminPage from './ComplaintsAdminPage';
 
-
-
-// Icons temporarily removed to fix import issues
-
+// Constants
 const drawerWidth = 280;
-
-// Material UI theme for admin dashboard
 const muiTheme = createTheme({
   palette: {
     primary: {
       main: '#1976d2',
-      light: '#42a5f5',
-      dark: '#1565c0',
     },
     secondary: {
       main: '#dc004e',
-    },
-    background: {
-      default: '#f5f5f5',
-    },
-  },
-  typography: {
-    fontFamily: 'Inter, sans-serif',
-    h4: {
-      fontWeight: 600,
-    },
-    h5: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 600,
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 12,
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 8,
-          textTransform: 'none',
-          fontWeight: 600,
-        },
-      },
     },
   },
 });
 
 const navLinks = [
-  { to: 'dashboard', label: 'Dashboard', icon: <span>📊</span> },
-  { to: 'products', label: 'Manage Products', icon: <span>📦</span> },
-  { to: 'add-product', label: 'Add New Product', icon: <span>➕</span> },
-  { to: 'coupons', label: 'Manage Coupons', icon: <span>🎫</span> },
-  { to: 'set-discount', label: 'Set Product Discount', icon: <span>💰</span> },
+  { to: 'products', label: 'Manage Products', icon: <InventoryIcon /> },
+  { to: 'add-product', label: 'Add New Product', icon: <AddIcon /> },
+  { to: 'coupons', label: 'Manage Coupons', icon: <CouponsIcon /> },
+  { to: 'set-discount', label: 'Set Product Discount', icon: <DiscountIcon /> },
+  { to: 'complaints', label: 'Manage Complaints', icon: <ComplaintsIcon /> },
 ];
 
 const AdminDashboardContent: React.FC = () => {
@@ -195,7 +170,7 @@ const AdminDashboardContent: React.FC = () => {
               onClick={handleDrawerToggle}
               sx={{ mr: 2 }}
             >
-              ☰
+              <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div">
               Admin Dashboard
@@ -364,4 +339,4 @@ const AdminDashboard: React.FC = () => {
   );
 };
 
-export default AdminDashboard; 
+export default AdminDashboard;

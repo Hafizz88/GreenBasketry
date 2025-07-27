@@ -296,67 +296,125 @@ const markArrival = async (req, res) => {
   }
 };
 
-// Confirm payment received
-const confirmPaymentReceived = async (req, res) => {
-  const { orderId } = req.params;
-  const { paymentMethod } = req.body; // 'cash', 'card', etc.
-  
-  try {
-    // Update order payment status
-    const updateQuery = await client.query(
-      `UPDATE orders 
-       SET payment_status = true, payment_date = CURRENT_TIMESTAMP
-       WHERE order_id = $1 RETURNING *`,
-      [orderId]
+// Helper to handle stock, points, and notifications for delivery completion or failure
+const handleOrderCompletionOrFailure = async ({ deliveryId, delivery_status, riderId }) => {
+  // Find riderId for this delivery if not provided
+  let usedRiderId = riderId;
+  if (!usedRiderId) {
+    const assignmentResult = await client.query(
+      `SELECT rider_id FROM delivery_assignments WHERE delivery_id = $1 ORDER BY assigned_at DESC LIMIT 1`,
+      [deliveryId]
     );
-    
-    if (updateQuery.rows.length === 0) {
-      return res.status(404).json({ error: 'Order not found' });
+    if (assignmentResult.rows.length > 0) {
+      usedRiderId = assignmentResult.rows[0].rider_id;
     }
-    
-    // Update delivery status to delivered
-    await client.query(
-      `UPDATE deliveries 
-       SET delivery_status = 'delivered' 
-       WHERE order_id = $1`,
-      [orderId]
-    );
-
-    // Update order status to 'confirmed'
-    await client.query(
-      `UPDATE orders SET order_status = 'confirmed' WHERE order_id = $1`,
-      [orderId]
-    );
-
-    // Find customerId for this order and send notification
-    const customerResult = await client.query(
-      `SELECT c.customer_id FROM orders o
-       JOIN carts c ON o.cart_id = c.cart_id
+  }
+  // Find orderId and customerId for this delivery
+  let orderId = null, customerId = null;
+  const orderResult = await client.query(
+    `SELECT o.order_id, c.customer_id FROM deliveries d
+     JOIN orders o ON d.order_id = o.order_id
+     JOIN carts c ON o.cart_id = c.cart_id
+     WHERE d.delivery_id = $1`,
+    [deliveryId]
+  );
+  if (orderResult.rows.length > 0) {
+    orderId = orderResult.rows[0].order_id;
+    customerId = orderResult.rows[0].customer_id;
+  }
+  // Insert into arrival_notifications for both failed and successful
+  if (usedRiderId) {
+    let message = '';
+    if (delivery_status === 'failed') {
+      message = 'Your delivery attempt failed. Please contact support or reorder.';
+    } else if (delivery_status === 'delivered') {
+      message = 'Your order was delivered successfully! Thank you for shopping with us.';
+    }
+    if (message) {
+      await client.query(
+        `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read, created_at)
+         VALUES ($1, $2, $3, false, NOW())`,
+        [deliveryId, usedRiderId, message]
+      );
+      // Emit real-time notification
+      if (io && customerId) {
+        io.to(customerId.toString()).emit('orderStatus', { deliveryId, message });
+      }
+      console.log(`[ARRIVAL_NOTIFICATION] Inserted: delivery_id=${deliveryId}, rider_id=${usedRiderId}, message=${message}`);
+    }
+  }
+  // If successful delivery, update product stock and customer points
+  if (delivery_status === 'delivered' && orderId && customerId) {
+    const itemsResult = await client.query(
+      `SELECT ci.product_id, ci.quantity, p.points_rewarded
+       FROM cart_items ci
+       JOIN orders o ON ci.cart_id = o.cart_id
+       JOIN products p ON ci.product_id = p.product_id
        WHERE o.order_id = $1`,
       [orderId]
     );
-    
-    if (customerResult.rows.length > 0) {
-      const customerId = customerResult.rows[0].customer_id;
-      io.to(customerId.toString()).emit('paymentConfirmed', {
-        orderId,
-        message: 'Thank you for your order! Payment received and delivery completed. Enjoy your groceries! 🛒✨'
-      });
-      // Store notification in DB
-      await addNotification({
-        body: { delivery_id: updateQuery.rows[0]?.delivery_id, rider_id: null, message: 'Thank you for your order! Payment received and delivery completed. Enjoy your groceries! 🛒✨' }
-      }, { status: () => ({ json: () => {} }) });
+    let totalPoints = 0;
+    for (const item of itemsResult.rows) {
+      await client.query(
+        `UPDATE products SET stock = stock - $1 WHERE product_id = $2`,
+        [item.quantity, item.product_id]
+      );
+      totalPoints += (item.points_rewarded || 0) * item.quantity;
     }
-    
+    if (totalPoints > 0) {
+      await client.query(
+        `UPDATE customers SET points_earned = points_earned + $1 WHERE customer_id = $2`,
+        [totalPoints, customerId]
+      );
+    }
+    console.log(`[ORDER SUCCESS] Updated stock and points for order_id=${orderId}, customer_id=${customerId}, points=${totalPoints}`);
+  }
+};
+
+const confirmPaymentReceived = async (req, res) => {
+  const { orderId } = req.params;
+  const { paymentMethod, riderId } = req.body;
+  try {
+    await client.query('BEGIN');
+    const updateQuery = await client.query(
+      `UPDATE orders SET payment_status = true, payment_date = CURRENT_TIMESTAMP WHERE order_id = $1 RETURNING *`,
+      [orderId]
+    );
+    if (updateQuery.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Order not found' });
+    }
+    const deliveryResult = await client.query(
+      `UPDATE deliveries SET delivery_status = 'delivered' WHERE order_id = $1 RETURNING *`,
+      [orderId]
+    );
+    await client.query(
+      `UPDATE orders SET order_status = 'delivered' WHERE order_id = $1`,
+      [orderId]
+    );
+    let deliveryId = null;
+    if (deliveryResult.rows.length > 0) {
+      deliveryId = deliveryResult.rows[0].delivery_id;
+    } else {
+      const dRes = await client.query(
+        `SELECT delivery_id FROM deliveries WHERE order_id = $1 LIMIT 1`,
+        [orderId]
+      );
+      if (dRes.rows.length > 0) deliveryId = dRes.rows[0].delivery_id;
+    }
+    if (deliveryId) {
+      await handleOrderCompletionOrFailure({ deliveryId, delivery_status: 'delivered', riderId });
+    }
+    await client.query('COMMIT');
     res.status(200).json({
       message: 'Payment confirmed and delivery completed',
       order_id: orderId,
       payment_status: true,
       payment_date: new Date()
     });
-    
-    console.log(`💰 Payment confirmed for order ${orderId} - Order status changed to 'confirmed'`);
+    console.log(`💰 Payment confirmed for order ${orderId} - Order status changed to 'delivered'`);
   } catch (error) {
+    await client.query('ROLLBACK');
     console.error('Error confirming payment:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
@@ -590,47 +648,36 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
-// Update delivery status and order status together
 const updateDeliveryAndOrderStatus = async (req, res) => {
   const { deliveryId } = req.params;
-  const { delivery_status, order_status } = req.body;
-  
-  // Validate allowed order statuses
+  const { delivery_status, order_status, riderId } = req.body;
   const allowedOrderStatuses = ['pending', 'confirmed', 'shipped', 'delivered', 'cancelled', 'returned'];
   if (order_status && !allowedOrderStatuses.includes(order_status)) {
     return res.status(400).json({ 
       error: 'Invalid order status. Allowed statuses: ' + allowedOrderStatuses.join(', ') 
     });
   }
-  
   try {
     await client.query('BEGIN');
-    
-    // Update delivery status
     if (delivery_status) {
       await client.query(
         `UPDATE deliveries SET delivery_status = $1 WHERE delivery_id = $2`,
         [delivery_status, deliveryId]
       );
     }
-    
-    // Update order status if provided
     if (order_status) {
       await client.query(
-        `UPDATE orders SET order_status = $1 
-         WHERE order_id = (SELECT order_id FROM deliveries WHERE delivery_id = $2)`,
+        `UPDATE orders SET order_status = $1 WHERE order_id = (SELECT order_id FROM deliveries WHERE delivery_id = $2)`,
         [order_status, deliveryId]
       );
     }
-    
+    await handleOrderCompletionOrFailure({ deliveryId, delivery_status, riderId });
     await client.query('COMMIT');
-    
     res.status(200).json({
       message: 'Delivery and order status updated successfully',
       delivery_status,
       order_status
     });
-    
     console.log(`📦 Delivery ${deliveryId} updated - Delivery: ${delivery_status}, Order: ${order_status}`);
   } catch (error) {
     await client.query('ROLLBACK');
@@ -805,6 +852,52 @@ const getAvailableRiders = async (req, res) => {
   }
 };
 
+// Send success notification to customer (insert directly into notifications table)
+const sendSuccessNotification = async (req, res) => {
+  const { deliveryId } = req.params;
+  const { message, riderId } = req.body;
+  try {
+    // Find customerId and orderId for this delivery
+    const result = await client.query(
+      `SELECT c.customer_id, d.order_id FROM deliveries d
+       JOIN orders o ON d.order_id = o.order_id
+       JOIN carts c ON o.cart_id = c.cart_id
+       WHERE d.delivery_id = $1`,
+      [deliveryId]
+    );
+    if (result.rows.length > 0) {
+      const { customer_id, order_id } = result.rows[0];
+
+      // Insert into arrival_notifications
+      await client.query(
+        `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read, created_at)
+         VALUES ($1, $2, $3, false, NOW())`,
+        [deliveryId, riderId, message || 'Your order was delivered successfully!']
+      );
+
+      // Update delivery and order status
+      await client.query(
+        `UPDATE deliveries SET delivery_status = 'delivered' WHERE delivery_id = $1`,
+        [deliveryId]
+      );
+      await client.query(
+        `UPDATE orders SET order_status = 'delivered' WHERE order_id = $1`,
+        [order_id]
+      );
+
+      // Insert into notifications
+      await client.query(
+        `INSERT INTO arrival_notifications (delivery_id,rider_id, message, is_read, created_at)
+         VALUES ($1, $2, $3, false, NOW())`,
+        [customer_id, deliveryId, message || 'Your order was delivered successfully! Thank you for shopping with us.']
+      );
+    }
+    res.status(200).json({ message: 'Success notification sent and statuses updated.' });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to send notification and update status.' });
+  }
+};
+
 export {
   riderLogin,
   updateRiderLocation,
@@ -826,5 +919,6 @@ export {
   markNotificationAsRead,
   getAvailableRiders,
   updateOrderStatus,
-  updateDeliveryAndOrderStatus
+  updateDeliveryAndOrderStatus,
+  sendSuccessNotification // <-- export
 };

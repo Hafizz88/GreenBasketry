@@ -8,7 +8,10 @@ import {
   updateProduct,
   getAllCoupons,
   deleteCoupon,
-  updateCoupon
+  updateCoupon,
+  resolveComplaint,
+  setProductDiscount,
+  runDiscountExpiry
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifytoken.js';
 import { upload } from '../controllers/cloudinaryController.js';
@@ -28,10 +31,15 @@ router.post('/create-coupon', verifyToken, createCoupon);
 router.get('/products', verifyToken, getAllProducts);
 router.delete('/products/:id', verifyToken, deleteProduct);
 router.put('/products/:id', verifyToken, updateProduct); // update all fields
+router.put('/products/:product_id/discount', verifyToken, setProductDiscount);
 
 router.get('/coupons', verifyToken, getAllCoupons);
 //router.post('/coupons', verifyToken, createCoupon); // Assuming you want to create a coupon
 router.delete('/coupons/:id', verifyToken, deleteCoupon);
 router.put('/coupons/:id', verifyToken, updateCoupon);
+
+// Route to resolve a complaint
+router.patch('/complaints/:id/resolve', verifyToken, resolveComplaint);
+router.post('/run-discount-expiry', verifyToken, runDiscountExpiry);
 
 export default router;

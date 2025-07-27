@@ -196,6 +196,83 @@ const getProductDetails = async (req, res) => {
   }
 };
 
+// Add a product review
+const addProductReview = async (req, res) => {
+  const { product_id } = req.params;
+  const customer_id = req.user && req.user.id;
+  const { rating, review_text } = req.body;
+
+  if (!customer_id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+  if (!rating || !review_text) {
+    return res.status(400).json({ error: 'Rating and review text are required' });
+  }
+
+  try {
+    const result = await client.query(
+      `INSERT INTO product_reviews (product_id, customer_id, rating, review_text)
+       VALUES ($1, $2, $3, $4) RETURNING *`,
+      [product_id, customer_id, rating, review_text]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error adding review:', err);
+    res.status(500).json({ error: 'Failed to add review' });
+  }
+};
+
+// Upvote a review
+const upvoteReview = async (req, res) => {
+  const { review_id } = req.params;
+  const customer_id = req.user && req.user.id;
+
+  if (!customer_id) {
+    return res.status(401).json({ error: 'Authentication required' });
+  }
+
+  try {
+    // Prevent duplicate upvotes
+    const existing = await client.query(
+      `SELECT * FROM review_upvotes WHERE review_id = $1 AND customer_id = $2`,
+      [review_id, customer_id]
+    );
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ error: 'Already upvoted' });
+    }
+
+    const result = await client.query(
+      `INSERT INTO review_upvotes (review_id, customer_id) VALUES ($1, $2) RETURNING *`,
+      [review_id, customer_id]
+    );
+    res.status(201).json(result.rows[0]);
+  } catch (err) {
+    console.error('Error upvoting review:', err);
+    res.status(500).json({ error: 'Failed to upvote review' });
+  }
+};
+
+// Get reviews with upvote count
+const getProductReviews = async (req, res) => {
+  const { product_id } = req.params;
+  try {
+    const result = await client.query(
+      `SELECT r.*, 
+              COALESCE(COUNT(u.upvote_id), 0) AS upvotes
+         FROM product_reviews r
+         LEFT JOIN review_upvotes u ON r.review_id = u.review_id
+        WHERE r.product_id = $1
+        GROUP BY r.review_id
+        ORDER BY r.created_at DESC`,
+      [product_id]
+    );
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error('Error fetching reviews:', err);
+    res.status(500).json({ error: 'Failed to fetch reviews' });
+  }
+};
+
 export { 
   getAllProducts, 
   getAllCategories, 
@@ -204,5 +281,8 @@ export {
   getTopSellingProducts,
   getTopSellingByCategory,
   createProduct, // Make sure to export createProduct
-  getProductDetails // Add the new function to the export
+  getProductDetails, // Add the new function to the export
+  addProductReview,
+  upvoteReview,
+  getProductReviews
 };

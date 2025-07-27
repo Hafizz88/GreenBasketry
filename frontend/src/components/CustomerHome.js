@@ -376,7 +376,7 @@ return (
   </div>
 
   <footer className="footer">
-    <p>Help | File a Complaint</p>
+    <p>Help | <button className="complaint-link" onClick={() => navigate('/complaints')}>File a Complaint</button></p>
   </footer>
 </div>
 
