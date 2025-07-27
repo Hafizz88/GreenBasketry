@@ -8,6 +8,7 @@ interface Coupon {
   discount_percent: number;
   valid_from: string;
   valid_to: string;
+  required_point: number;
 }
 
 const getAuthHeader = () => {
@@ -28,6 +29,7 @@ const ManageCoupons: React.FC = () => {
     discount_percent: '',
     valid_from: '',
     valid_to: '',
+    required_point: '',
   });
   const [editingId, setEditingId] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
@@ -36,7 +38,13 @@ const ManageCoupons: React.FC = () => {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      const res = await axios.get('http://localhost:5001/api/admin/coupons', getAuthHeader());
+      // If userId is present, fetch only eligible coupons
+      const userId = localStorage.getItem('userId');
+      let url = 'http://localhost:5001/api/admin/coupons';
+      if (userId) {
+        url += `?customer_id=${userId}`;
+      }
+      const res = await axios.get(url, getAuthHeader());
       setCoupons(res.data);
       setError('');
     } catch (err) {
@@ -59,6 +67,7 @@ const ManageCoupons: React.FC = () => {
     const body = {
       ...form,
       discount_percent: parseFloat(form.discount_percent),
+      required_point: parseInt(form.required_point, 10) || 0,
       is_active: true,
     };
     try {
@@ -85,6 +94,7 @@ const ManageCoupons: React.FC = () => {
       discount_percent: '',
       valid_from: '',
       valid_to: '',
+      required_point: '',
     });
     setEditingId(null);
   };
@@ -96,6 +106,7 @@ const ManageCoupons: React.FC = () => {
       discount_percent: coupon.discount_percent.toString(),
       valid_from: coupon.valid_from.slice(0, 10),
       valid_to: coupon.valid_to.slice(0, 10),
+      required_point: coupon.required_point?.toString() || '',
     });
     setEditingId(coupon.coupon_id);
   };
@@ -119,6 +130,7 @@ const ManageCoupons: React.FC = () => {
         <input name="discount_percent" type="number" placeholder="Discount %" value={form.discount_percent} onChange={handleChange} required />
         <input name="valid_from" type="date" value={form.valid_from} onChange={handleChange} required />
         <input name="valid_to" type="date" value={form.valid_to} onChange={handleChange} required />
+        <input name="required_point" type="number" placeholder="Required Points" value={form.required_point} onChange={handleChange} min={0} />
         <button type="submit">{editingId ? 'Update Coupon' : 'Add Coupon'}</button>
         {editingId && <button type="button" onClick={resetForm}>Cancel</button>}
       </form>
@@ -140,6 +152,7 @@ const ManageCoupons: React.FC = () => {
               <th>Discount %</th>
               <th>Valid From</th>
               <th>Valid To</th>
+              <th>Required Points</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -151,6 +164,7 @@ const ManageCoupons: React.FC = () => {
                 <td>{coupon.discount_percent}</td>
                 <td>{coupon.valid_from.slice(0, 10)}</td>
                 <td>{coupon.valid_to.slice(0, 10)}</td>
+                <td>{coupon.required_point}</td>
                 <td>
                   <button onClick={() => handleEdit(coupon)}>Edit</button>
                   <button onClick={() => handleDelete(coupon.coupon_id)}>Delete</button>

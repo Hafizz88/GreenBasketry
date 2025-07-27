@@ -11,7 +11,7 @@ interface Product {
   product_id: number;
   name: string;
   category: string;
-  price: number;
+  price: number | null | undefined;
   stock: number;
   image_url: string;
 }
@@ -210,7 +210,7 @@ const ProductsPage = () => {
 
                   <div className="flex items-center justify-between">
                     <span className="text-lg font-bold text-primary">
-                      ৳{product.price.toFixed(2)}
+                      ৳{Number(product.price || 0).toFixed(2)}
                     </span>
                     <div className="flex items-center space-x-1">
                       <Star className="h-4 w-4 text-accent fill-current" />

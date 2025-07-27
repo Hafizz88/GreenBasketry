@@ -204,3 +204,90 @@ CREATE TRIGGER trg_products_after_delete
 AFTER DELETE ON public.products
 FOR EACH ROW
 EXECUTE FUNCTION log_product_delete();
+
+CREATE OR REPLACE FUNCTION log_coupon_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    NEW.created_by_admin_id::TEXT,
+    now(),
+    'CREATE',
+    'coupons',
+    NEW.coupon_id::TEXT,
+    'New Coupon created: ' || NEW.code || ' (ID: ' || NEW.coupon_id || '). Discount: ' || NEW.discount_percent || '%.'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_coupon_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    NEW.created_by_admin_id::TEXT,
+    now(),
+    'UPDATE',
+    'coupons',
+    NEW.coupon_id::TEXT,
+    'Coupon updated: ' || NEW.code || ' (ID: ' || NEW.coupon_id || ').'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_coupon_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    OLD.created_by_admin_id::TEXT,
+    now(),
+    'DELETE',
+    'coupons',
+    OLD.coupon_id::TEXT,
+    'Coupon deleted: ' || OLD.code || ' (ID: ' || OLD.coupon_id || ').'
+  );
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop triggers if they already exist
+DROP TRIGGER IF EXISTS trg_coupons_after_insert ON public.coupons;
+DROP TRIGGER IF EXISTS trg_coupons_after_update ON public.coupons;
+DROP TRIGGER IF EXISTS trg_coupons_after_delete ON public.coupons;
+
+-- Create triggers
+CREATE TRIGGER trg_coupons_after_insert
+AFTER INSERT ON public.coupons
+FOR EACH ROW
+EXECUTE FUNCTION log_coupon_insert();
+
+CREATE TRIGGER trg_coupons_after_update
+AFTER UPDATE ON public.coupons
+FOR EACH ROW
+EXECUTE FUNCTION log_coupon_update();
+
+CREATE TRIGGER trg_coupons_after_delete
+AFTER DELETE ON public.coupons
+FOR EACH ROW
+EXECUTE FUNCTION log_coupon_delete();

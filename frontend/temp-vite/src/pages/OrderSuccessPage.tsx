@@ -125,11 +125,20 @@ const OrderSuccessPage = () => {
           
           <Button 
             variant="outline"
-            onClick={() => navigate('/home')}
-            className="w-full sm:w-auto"
+            onClick={() => navigate('/home')} 
+            className="flex-1"
           >
             Continue Shopping
           </Button>
+          {orderId && (
+            <Button 
+              onClick={() => navigate(`/order-status/${orderId}`)} 
+              className="flex-1"
+            >
+              Track Order
+              <ArrowRight className="h-4 w-4 ml-2" />
+            </Button>
+          )}
         </div>
       </div>
     </div>

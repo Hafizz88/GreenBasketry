@@ -45,16 +45,16 @@ export const updateProductPrice = async (req, res) => {
 
 // Create a new discount coupon
 export const createCoupon = async (req, res) => {
-  const { code, description, discount_percent, valid_from, valid_to } = req.body;
+  const { code, description, discount_percent, valid_from, valid_to, required_point } = req.body;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   if (!admin_id) {
     return res.status(400).json({ error: 'Admin ID is required' });
   }
   try {
     const result = await client.query(
-      `INSERT INTO coupons (code, description, discount_percent, valid_from, valid_to, created_by_admin_id)
-       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
-      [code, description, discount_percent, valid_from, valid_to, admin_id]
+      `INSERT INTO coupons (code, description, discount_percent, valid_from, valid_to, created_by_admin_id, required_point)
+       VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *`,
+      [code, description, discount_percent, valid_from, valid_to, admin_id, required_point]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -153,9 +153,27 @@ export const setProductDiscount = async (req, res) => {
 
 // Get all coupons
 export const getAllCoupons = async (req, res) => {
+  // Accept customer_id as query param
+  const customer_id = req.query.customer_id;
   try {
-    const result = await client.query('SELECT * FROM coupons');
+    if (customer_id) {
+      // Get available points for the customer
+      const pointsRes = await client.query(
+        `SELECT (COALESCE(points_earned, 0) - COALESCE(points_used, 0)) as available_points FROM customers WHERE customer_id = $1`,
+        [customer_id]
+      );
+      const available_points = Number(pointsRes.rows[0]?.available_points) || 0;
+      // Only return coupons the customer can afford
+      const result = await client.query(
+        'SELECT * FROM coupons WHERE is_active = true AND required_point <= $1',
+        [available_points]
+      );
+      res.json(result.rows);
+    } else {
+      // Fallback: return all active coupons
+      const result = await client.query('SELECT * FROM coupons WHERE is_active = true');
     res.json(result.rows);
+    }
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch coupons' });
   }
@@ -169,11 +187,11 @@ export const deleteCoupon = async (req, res) => {
     return res.status(400).json({ error: 'Admin ID is required' });
   }
   try {
-    // Optionally, you could log this delete action with admin_id for auditing
-    await client.query('DELETE FROM coupons WHERE coupon_id = $1', [id]);
-    res.json({ message: 'Coupon deleted' });
+    // Instead of deleting, set is_active to false
+    await client.query('UPDATE coupons SET is_active = false, created_by_admin_id = $1 WHERE coupon_id = $2', [admin_id, id]);
+    res.json({ message: 'Coupon deactivated' });
   } catch (err) {
-    res.status(500).json({ error: 'Failed to delete coupon' });
+    res.status(500).json({ error: 'Failed to deactivate coupon' });
     console.log(err);
   }
 };
@@ -181,15 +199,15 @@ export const deleteCoupon = async (req, res) => {
 // Update a coupon
 export const updateCoupon = async (req, res) => {
   const coupon_id = req.params.id;
-  const { code, description, discount_percent, valid_from, valid_to, is_active } = req.body;
+  const { code, description, discount_percent, valid_from, valid_to, is_active, required_point } = req.body;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   if (!admin_id) {
     return res.status(400).json({ error: 'Admin ID is required' });
   }
   try {
     const result = await client.query(
-      `UPDATE coupons SET code=$1, description=$2, discount_percent=$3, valid_from=$4, valid_to=$5, is_active=$6, created_by_admin_id=$7 WHERE coupon_id=$8 RETURNING *`,
-      [code, description, discount_percent, valid_from, valid_to, is_active, admin_id, coupon_id]
+      `UPDATE coupons SET code=$1, description=$2, discount_percent=$3, valid_from=$4, valid_to=$5, is_active=$6, created_by_admin_id=$7, required_point=$8 WHERE coupon_id=$9 RETURNING *`,
+      [code, description, discount_percent, valid_from, valid_to, is_active, admin_id, required_point, coupon_id]
     );
     if (result.rows.length === 0) {
       return res.status(404).json({ error: 'Coupon not found' });

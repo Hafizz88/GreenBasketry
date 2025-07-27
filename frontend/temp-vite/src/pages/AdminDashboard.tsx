@@ -55,11 +55,12 @@ const muiTheme = createTheme({
 });
 
 const navLinks = [
-  { to: 'products', label: 'Manage Products', icon: <InventoryIcon /> },
-  { to: 'add-product', label: 'Add New Product', icon: <AddIcon /> },
-  { to: 'coupons', label: 'Manage Coupons', icon: <CouponsIcon /> },
-  { to: 'set-discount', label: 'Set Product Discount', icon: <DiscountIcon /> },
-  { to: 'complaints', label: 'Manage Complaints', icon: <ComplaintsIcon /> },
+  { to: 'products', label: 'Manage Products' },
+  { to: 'add-product', label: 'Add New Product' },
+  { to: 'coupons', label: 'Manage Coupons' },
+  { to: 'set-discount', label: 'Set Product Discount' },
+  { to: 'complaints', label: 'Manage Complaints' },
+  { to: 'cancelled-orders', label: 'Cancelled Orders' },
 ];
 
 const AdminDashboardContent: React.FC = () => {

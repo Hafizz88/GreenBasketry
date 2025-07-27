@@ -1,5 +1,5 @@
 import express from 'express';
-import verifyToken from '../middleware/verifyToken.js';
+import verifyToken from '../middleware/verifytoken.js';
 import {
   riderLogin,
   updateRiderLocation,
@@ -20,7 +20,8 @@ import {
   getRiderNotifications,
   markNotificationAsRead,
   getAvailableRiders,
-  sendSuccessNotification
+  sendSuccessNotification,
+  handleOrderCancellation
 } from '../controllers/riderController.js';
 
 const router = express.Router();
@@ -50,6 +51,9 @@ router.put('/delivery/:deliveryId/status', verifyToken, updateDeliveryAndOrderSt
 router.put('/delivery/:deliveryId/set-time', verifyToken, setDeliveryTime);
 router.put('/delivery/:deliveryId/arrival', verifyToken, markArrival);
 router.post('/delivery/:deliveryId/success-notification', verifyToken, sendSuccessNotification);
+
+// Order Cancellation
+router.post('/delivery/:deliveryId/cancel', verifyToken, handleOrderCancellation);
 
 // Payment & Order Completion
 router.put('/order/:orderId/confirm-payment', verifyToken, confirmPaymentReceived);

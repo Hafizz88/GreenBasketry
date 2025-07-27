@@ -414,6 +414,27 @@ const RiderHome: React.FC = () => {
     }
   };
 
+  const handleOrderCancellation = async (deliveryId: number) => {
+    if (!rider?.rider_id) return;
+    try {
+      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/cancel`, {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ riderId: rider.rider_id })
+      });
+      if (response.ok) {
+        alert('Order cancellation processed. Please return to base.');
+        fetchRiderData(rider.rider_id);
+      } else {
+        const error = await response.json();
+        alert('Failed to process cancellation: ' + (error.error || 'Unknown error'));
+      }
+    } catch (error) {
+      console.error('Error processing cancellation:', error);
+      alert('Error processing cancellation.');
+    }
+  };
+
   const sendSuccessNotification = async (deliveryId: number) => {
     if (!rider?.rider_id) return;
     try {
@@ -587,6 +608,25 @@ const RiderHome: React.FC = () => {
                             }}
                           >
                             ❌ Mark as Failed
+                          </button>
+                        )}
+                        {a.delivery_status === 'assigned' && (
+                          <button
+                            onClick={() => handleOrderCancellation(a.delivery_id)}
+                            style={{
+                              background: 'linear-gradient(90deg, #dc2626 0%, #b91c1c 100%)',
+                              color: '#fff',
+                              border: 'none',
+                              borderRadius: 8,
+                              padding: '0.5rem 1.5rem',
+                              fontWeight: 700,
+                              fontSize: 16,
+                              boxShadow: '0 2px 8px #dc262633',
+                              cursor: 'pointer',
+                              transition: 'background 0.2s',
+                            }}
+                          >
+                            🚫 Order Cancelled
                           </button>
                         )}
                         {a.delivery_status === 'out_for_delivery' && (
