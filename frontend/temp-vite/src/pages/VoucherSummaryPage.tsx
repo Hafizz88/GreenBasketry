@@ -15,13 +15,23 @@ interface VoucherSummary {
   total_discount: number;
   delivery_fee: number;
   grand_total: number;
-  active_coupon_code?: string;
-  active_coupon_discount?: number;
   points_used?: number;
+}
+
+interface Coupon {
+  coupon_id: number;
+  code: string;
+  description: string;
+  discount_percent: number;
+  required_point: number;
+  valid_from: string;
+  valid_to: string;
 }
 
 const VoucherSummaryPage = () => {
   const [summary, setSummary] = useState<VoucherSummary | null>(null);
+  const [coupons, setCoupons] = useState<Coupon[]>([]);
+  const [selectedCoupon, setSelectedCoupon] = useState<Coupon | null>(null);
   const [loading, setLoading] = useState(true);
   const [placing, setPlacing] = useState(false);
   const navigate = useNavigate();
@@ -43,7 +53,7 @@ const VoucherSummaryPage = () => {
   };
 
   useEffect(() => {
-    const fetchSummary = async () => {
+    const fetchData = async () => {
       try {
         const authHeader = getAuthHeader();
         if (!authHeader) {
@@ -66,15 +76,22 @@ const VoucherSummaryPage = () => {
           return;
         }
 
-        const response = await axios.get(
+        // Fetch voucher summary
+        const summaryResponse = await axios.get(
           `http://localhost:5001/api/vouchers/${customerId}`,
           authHeader
         );
-        
-        setSummary(response.data);
+        setSummary(summaryResponse.data);
+
+        // Fetch available coupons for this customer
+        const couponsResponse = await axios.get(
+          `http://localhost:5001/api/customers/coupons?customer_id=${customerId}`,
+          authHeader
+        );
+        setCoupons(couponsResponse.data);
         
       } catch (error: any) {
-        console.error('Failed to fetch voucher summary:', error);
+        console.error('Failed to fetch data:', error);
         
         if (error.response?.status === 401) {
           toast({
@@ -103,8 +120,42 @@ const VoucherSummaryPage = () => {
       }
     };
 
-    fetchSummary();
+    fetchData();
   }, [customerId, navigate]);
+
+  const handleApplyCoupon = (coupon: Coupon) => {
+    setSelectedCoupon(coupon);
+    toast({
+      title: "Coupon Applied",
+      description: `${coupon.code} applied successfully!`,
+    });
+  };
+
+  const handleRemoveCoupon = () => {
+    setSelectedCoupon(null);
+    toast({
+      title: "Coupon Removed",
+      description: "Coupon has been removed.",
+    });
+  };
+
+  const getDiscountedGrandTotal = () => {
+    if (!summary) return 0;
+    
+    const subtotal = Number(summary.subtotal) || 0;
+    const vat = Number(summary.total_vat) || 0;
+    const deliveryFee = Number(summary.delivery_fee) || 0;
+    const pointsUsed = Number(summary.points_used) || 0;
+    
+    let total = subtotal + vat + deliveryFee - pointsUsed;
+    
+    if (selectedCoupon) {
+      const discountAmount = (total * selectedCoupon.discount_percent) / 100;
+      total -= discountAmount;
+    }
+    
+    return total;
+  };
 
   const handleProceed = async () => {
     if (!summary || !summary.cart_id) {
@@ -136,8 +187,8 @@ const VoucherSummaryPage = () => {
         points_used: summary.points_used || 0
       };
 
-      if (summary.active_coupon_code) {
-        orderData.coupon_code = summary.active_coupon_code;
+      if (selectedCoupon) {
+        orderData.coupon_code = selectedCoupon.code;
       }
 
       const response = await axios.post(
@@ -292,42 +343,95 @@ const VoucherSummaryPage = () => {
             
             <div className="flex justify-between items-center text-lg font-bold">
               <span>Grand Total</span>
-              <span className="text-primary">{formatCurrency(summary.grand_total)}</span>
+              <span className="text-primary">{formatCurrency(getDiscountedGrandTotal())}</span>
             </div>
           </CardContent>
         </Card>
 
-        {/* Coupon Information */}
-        {summary.active_coupon_code ? (
+        {/* Available Coupons */}
+        <Card className="mb-6 shadow-card-hover border-0 bg-gradient-card">
+          <CardHeader>
+            <div className="flex items-center space-x-4">
+              <div className="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center">
+                <Ticket className="h-6 w-6 text-secondary-foreground" />
+              </div>
+              <div>
+                <CardTitle>Available Coupons</CardTitle>
+                <CardDescription>Select a coupon to apply discount</CardDescription>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {coupons.length === 0 ? (
+              <p className="text-center text-muted-foreground py-4">No coupons available for your points</p>
+            ) : (
+              <div className="space-y-3">
+                {coupons.map((coupon) => (
+                  <div key={coupon.coupon_id} className="flex items-center justify-between p-3 border rounded-lg">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold">{coupon.code}</p>
+                        <Badge variant="outline" className="text-xs">
+                          {coupon.required_point} pts
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground">{coupon.description}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge className="bg-success text-success-foreground">
+                        -{coupon.discount_percent}%
+                      </Badge>
+                      <Button
+                        size="sm"
+                        variant={selectedCoupon?.coupon_id === coupon.coupon_id ? "default" : "outline"}
+                        onClick={() => selectedCoupon?.coupon_id === coupon.coupon_id 
+                          ? handleRemoveCoupon() 
+                          : handleApplyCoupon(coupon)
+                        }
+                      >
+                        {selectedCoupon?.coupon_id === coupon.coupon_id ? "Applied" : "Apply"}
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* Selected Coupon Display */}
+        {selectedCoupon && (
           <Card className="mb-6 shadow-card-hover border-0 bg-gradient-secondary/20">
             <CardHeader>
-              <div className="flex items-center space-x-4">
-                <div className="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center">
-                  <Ticket className="h-6 w-6 text-secondary-foreground" />
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-12 h-12 bg-gradient-secondary rounded-full flex items-center justify-center">
+                    <Ticket className="h-6 w-6 text-secondary-foreground" />
+                  </div>
+                  <div>
+                    <CardTitle>Applied Coupon</CardTitle>
+                    <CardDescription>You're saving money!</CardDescription>
+                  </div>
                 </div>
-                <div>
-                  <CardTitle>Applied Coupon</CardTitle>
-                  <CardDescription>You're saving money!</CardDescription>
-                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRemoveCoupon}
+                >
+                  Remove
+                </Button>
               </div>
             </CardHeader>
             <CardContent>
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="font-semibold">{summary.active_coupon_code}</p>
-                  <p className="text-sm text-muted-foreground">Coupon discount applied</p>
+                  <p className="font-semibold">{selectedCoupon.code}</p>
+                  <p className="text-sm text-muted-foreground">{selectedCoupon.description}</p>
                 </div>
                 <Badge className="bg-success text-success-foreground">
-                  -{summary.active_coupon_discount}%
+                  -{selectedCoupon.discount_percent}%
                 </Badge>
               </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="mb-6 shadow-card-hover border-0 bg-muted/20">
-            <CardContent className="text-center p-6">
-              <Ticket className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No coupons applied</p>
             </CardContent>
           </Card>
         )}

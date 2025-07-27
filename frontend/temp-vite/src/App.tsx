@@ -28,6 +28,10 @@ import RiderHome from "./pages/RiderHome";
 import ProductDetails from "./pages/ProductDetails";
 import ComplaintsPage from "./pages/ComplaintsPage";
 import ComplaintsAdminPage from "./pages/ComplaintsAdminPage";
+import CancelledOrdersPage from './pages/CancelledOrdersPage';
+import OrderStatusPage from './pages/OrderStatusPage';
+import CustomerOrdersPage from './pages/CustomerOrdersPage';
+import CancellableOrdersPage from './pages/CancellableOrdersPage';
 import ProtectedRoute from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
@@ -143,6 +147,30 @@ const App = () => {
                 </ProtectedRoute>
               }
             />
+            <Route
+              path="/order-status/:orderId"
+              element={
+                <ProtectedRoute>
+                  <OrderStatusPage />
+                </ProtectedRoute>
+              }
+            />
+                          <Route
+                path="/orders"
+                element={
+                  <ProtectedRoute>
+                    <CustomerOrdersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/cancellable-orders"
+                element={
+                  <ProtectedRoute>
+                    <CancellableOrdersPage />
+                  </ProtectedRoute>
+                }
+              />
             {/* Admin Dashboard and subpages */}
             <Route
               path="/admin"
@@ -159,6 +187,7 @@ const App = () => {
               <Route path="coupons" element={<ManageCoupons />} />
               <Route path="set-discount" element={<SetDiscount />} />
               <Route path="complaints" element={<ComplaintsAdminPage />} />
+              <Route path="cancelled-orders" element={<CancelledOrdersPage />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

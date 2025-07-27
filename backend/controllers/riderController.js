@@ -344,7 +344,7 @@ const handleOrderCompletionOrFailure = async ({ deliveryId, delivery_status, rid
     }
   }
   // If successful delivery, update product stock and customer points
-  if (delivery_status === 'delivered' && orderId && customerId) {
+  /*if (delivery_status === 'delivered' && orderId && customerId) {
     const itemsResult = await client.query(
       `SELECT ci.product_id, ci.quantity, p.points_rewarded
        FROM cart_items ci
@@ -368,8 +368,9 @@ const handleOrderCompletionOrFailure = async ({ deliveryId, delivery_status, rid
       );
     }
     console.log(`[ORDER SUCCESS] Updated stock and points for order_id=${orderId}, customer_id=${customerId}, points=${totalPoints}`);
-  }
+  }*/
 };
+
 
 const confirmPaymentReceived = async (req, res) => {
   const { orderId } = req.params;
@@ -420,46 +421,96 @@ const confirmPaymentReceived = async (req, res) => {
   }
 };
 
-// Get rider's current assignments
+// Handle order cancellation notification for riders
+const handleOrderCancellation = async (req, res) => {
+  const { deliveryId } = req.params;
+  const { riderId } = req.body;
+
+  try {
+    await client.query('BEGIN');
+
+    // Check if delivery exists and is assigned to this rider
+    const deliveryCheck = await client.query(
+      `SELECT d.*, da.rider_id 
+       FROM deliveries d
+       LEFT JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
+       WHERE d.delivery_id = $1 AND da.rider_id = $2`,
+      [deliveryId, riderId]
+    );
+
+    if (deliveryCheck.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Delivery not found or not assigned to this rider' });
+    }
+
+    const delivery = deliveryCheck.rows[0];
+
+    // Update delivery status to failed
+    await client.query(
+      `UPDATE deliveries SET delivery_status = 'failed' WHERE delivery_id = $1`,
+      [deliveryId]
+    );
+
+    // Create notification for rider about cancellation
+    await client.query(
+      `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read, created_at)
+       VALUES ($1, $2, $3, false, NOW())`,
+      [deliveryId, riderId, 'Order cancelled by customer. Please return to base.']
+    );
+
+    // Emit real-time notification to rider
+    if (io) {
+      io.to(`rider_${riderId}`).emit('orderCancelled', {
+        deliveryId,
+        message: 'Order cancelled by customer. Please return to base.'
+      });
+    }
+
+    await client.query('COMMIT');
+
+    res.status(200).json({
+      success: true,
+      message: 'Order cancellation processed. Rider notified.'
+    });
+
+  } catch (error) {
+    await client.query('ROLLBACK');
+    console.error('Error handling order cancellation:', error);
+    res.status(500).json({ error: 'Failed to process order cancellation' });
+  }
+};
+
+// Update getRiderCurrentAssignments to filter out cancelled orders
 const getRiderCurrentAssignments = async (req, res) => {
   const { riderId } = req.params;
-  
   try {
-    const assignmentsQuery = await client.query(
+    const result = await client.query(
       `SELECT 
+        d.delivery_id,
         o.order_id,
-        o.order_date,
         o.order_status,
         o.total_amount,
-        o.payment_status,
-        d.delivery_id,
-        d.delivery_status,
-        d.estimated_time,
-        da.assigned_at,
         c.name as customer_name,
         c.phone as customer_phone,
-        addr.address_line,
-        addr.postal_code,
-        t.thana_name,
-        dz.zone_name
-      FROM orders o
-      JOIN deliveries d ON o.order_id = d.order_id
-      JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
+        a.address_line,
+        d.delivery_status,
+        d.estimated_time
+       FROM deliveries d
+       JOIN orders o ON d.order_id = o.order_id
       JOIN carts cart ON o.cart_id = cart.cart_id
       JOIN customers c ON cart.customer_id = c.customer_id
-      JOIN addresses addr ON o.address_id = addr.address_id
-      LEFT JOIN "Thanas" t ON addr.thana_id = t.id
-      JOIN delivery_zones dz ON addr.zone_id = dz.zone_id
+       JOIN addresses a ON o.address_id = a.address_id
+       JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
       WHERE da.rider_id = $1 
-        AND d.delivery_status IN ('assigned', 'out_for_delivery')
+         AND o.order_status != 'cancelled'
+         AND d.delivery_status NOT IN ('delivered', 'failed')
       ORDER BY da.assigned_at DESC`,
       [riderId]
     );
-    
-    res.status(200).json(assignmentsQuery.rows);
+    res.json(result.rows);
   } catch (error) {
     console.error('Error fetching rider assignments:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch assignments' });
   }
 };
 
@@ -920,5 +971,6 @@ export {
   getAvailableRiders,
   updateOrderStatus,
   updateDeliveryAndOrderStatus,
-  sendSuccessNotification // <-- export
+  sendSuccessNotification,
+  handleOrderCancellation // <-- export
 };

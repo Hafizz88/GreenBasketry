@@ -4,7 +4,8 @@ import { useNavigate } from 'react-router-dom';
 import { 
   Search, ShoppingCart, Heart, User, Menu, X, 
   TrendingUp, Grid3X3, Star, Plus, Filter,
-  LogOut, MapPin, Bell, Settings, X as CloseIcon, RefreshCw as RefreshIcon
+  LogOut, MapPin, Bell, Settings, X as CloseIcon, RefreshCw as RefreshIcon,
+  Package // Added for Track Orders icon
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -59,6 +60,22 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
 
   const isLoggedIn = () => {
     return localStorage.getItem('userId') && localStorage.getItem('token');
+  };
+
+  // Handle Track Orders navigation
+  const handleTrackOrders = () => {
+    if (!isLoggedIn()) {
+      toast({
+        title: "Login Required",
+        description: "Please log in to view your orders.",
+        variant: "destructive",
+      });
+      onShowAuth?.();
+      return;
+    }
+    
+    // Navigate to customer orders page
+    navigate('/orders');
   };
 
   // Animated brand name effect
@@ -499,6 +516,16 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
                   <Button 
                     variant="outline" 
                     size="sm"
+                    onClick={handleTrackOrders}
+                    className="hidden sm:flex"
+                  >
+                    <Package className="h-4 w-4 mr-2" />
+                    Track Orders
+                  </Button>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="sm"
                     onClick={() => navigate('/complaints')}
                     className="hidden sm:flex"
                   >
@@ -664,33 +691,35 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
                         </Button>
                       </div>
                       {/* Product Info (name clickable) */}
-                      <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer" onClick={() => navigate(`/product/${product.product_id || product.id}`)}>
-                        {product.name || product.title || 'No Title'}
-                      </h3>
-                      <div className="flex items-center justify-between">
-                        <span className="text-2xl font-bold text-primary">
-                          ৳{product.price || 'N/A'}
-                        </span>
-                        {/* Add to Cart Button */}
+                      <div className="p-4">
+                        <h3 className="font-semibold text-foreground line-clamp-2 cursor-pointer mb-2" onClick={() => navigate(`/product/${product.product_id || product.id}`)}>
+                          {product.name || product.title || 'No Title'}
+                        </h3>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="text-2xl font-bold text-primary">
+                            ৳{product.price || 'N/A'}
+                          </span>
+                          {/* Add to Cart Button */}
+                          <Button
+                            variant="cart"
+                            size="sm"
+                            onClick={() => handleAddToCart(product.product_id || product.id || 0)}
+                            className="text-xs px-3"
+                          >
+                            <Plus className="h-3 w-3 mr-1" />
+                            Add
+                          </Button>
+                        </div>
+                        {/* Details Button */}
                         <Button
-                          variant="cart"
+                          variant="outline"
                           size="sm"
-                          onClick={() => handleAddToCart(product.product_id || product.id || 0)}
-                          className="text-xs px-3"
+                          className="w-full"
+                          onClick={() => navigate(`/product/${product.product_id || product.id}`)}
                         >
-                          <Plus className="h-3 w-3 mr-1" />
-                          Add
+                          Details
                         </Button>
                       </div>
-                      {/* Details Button */}
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2 w-full"
-                        onClick={() => navigate(`/product/${product.product_id || product.id}`)}
-                      >
-                        Details
-                      </Button>
                     </CardContent>
                   </Card>
                 ))}

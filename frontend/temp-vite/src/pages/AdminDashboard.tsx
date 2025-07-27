@@ -8,6 +8,7 @@ const navLinks = [
   { to: 'coupons', label: 'Manage Coupons' },
   { to: 'set-discount', label: 'Set Product Discount' },
   { to: 'complaints', label: 'Manage Complaints' },
+  { to: 'cancelled-orders', label: 'Cancelled Orders' },
 ];
 
 const AdminDashboard: React.FC = () => {

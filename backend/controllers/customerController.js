@@ -88,5 +88,32 @@ export const getAddressesByCustomer = async (req, res) => {
   }
 };
 
+export const getAllCoupons = async (req, res) => {
+  // Accept customer_id as query param
+  const customer_id = req.query.customer_id;
+  try {
+    if (customer_id) {
+      // Get available points for the customer
+      const pointsRes = await client.query(
+        `SELECT (COALESCE(points_earned, 0) - COALESCE(points_used, 0)) as available_points FROM customers WHERE customer_id = $1`,
+        [customer_id]
+      );
+      const available_points = Number(pointsRes.rows[0]?.available_points) || 0;
+      // Only return coupons the customer can afford
+      const result = await client.query(
+        'SELECT * FROM coupons WHERE is_active = true AND required_point <= $1',
+        [available_points]
+      );
+      res.json(result.rows);
+    } else {
+      // Fallback: return all active coupons
+      const result = await client.query('SELECT * FROM coupons WHERE is_active = true');
+    res.json(result.rows);
+    }
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch coupons' });
+  }
+};
+
 
 

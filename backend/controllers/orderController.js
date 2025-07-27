@@ -169,11 +169,19 @@ export const getOrder = async (req, res) => {
       [orderId]
     );
 
-    res.json({
-      order,
+    const delivery = deliveryResult.rows[0] || null;
+    
+    // Combine all data into a single object
+    const orderDetails = {
+      ...order,
       items: itemsResult.rows,
-      delivery: deliveryResult.rows[0] || null
-    });
+      delivery_status: delivery?.delivery_status || null,
+      estimated_time: delivery?.estimated_time || null,
+      rider_name: delivery?.rider_name || null,
+      rider_phone: delivery?.rider_phone || null
+    };
+
+    res.json(orderDetails);
 
   } catch (error) {
     console.error('❌ Error fetching order:', error);
@@ -335,17 +343,33 @@ export const placeOrder = async (req, res) => {
     // 6. Handle coupon discount
     let discount_amount = 0;
     let applied_coupon_id = null;
+    let coupon_required_point = 0;
     if (coupon_code) {
       const couponResult = await client.query(
-        `SELECT coupon_id, discount_percent FROM coupons
+        `SELECT coupon_id, discount_percent, required_point FROM coupons
          WHERE code = $1 AND is_active = true
          AND valid_from <= CURRENT_DATE AND valid_to >= CURRENT_DATE`,
         [coupon_code]
       );
       if (couponResult.rows.length > 0) {
         const coupon = couponResult.rows[0];
+        // Check if customer has enough points for this coupon
+        const customerPoints = await client.query(
+          `SELECT (COALESCE(points_earned, 0) - COALESCE(points_used, 0)) as available_points
+           FROM customers WHERE customer_id = $1`,
+          [customer_id]
+        );
+        const availablePoints = Number(customerPoints.rows[0]?.available_points) || 0;
+        if (coupon.required_point > availablePoints) {
+          await client.query('ROLLBACK');
+          return res.status(400).json({
+            success: false,
+            error: `Insufficient points for this coupon. Required: ${coupon.required_point}, Available: ${availablePoints}`
+          });
+        }
         applied_coupon_id = coupon.coupon_id;
         discount_amount = subtotal * (Number(coupon.discount_percent) / 100);
+        coupon_required_point = coupon.required_point;
       }
     }
 
@@ -405,10 +429,10 @@ export const placeOrder = async (req, res) => {
     }
 
     // 11. Update customer points (used)
-    if (pointsToUse > 0) {
+    if (pointsToUse > 0 || coupon_required_point > 0) {
       await client.query(
         `UPDATE customers SET points_used = COALESCE(points_used, 0) + $1 WHERE customer_id = $2`,
-        [pointsToUse, customer_id]
+        [pointsToUse + coupon_required_point, customer_id]
       );
     }
 
