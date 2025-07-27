@@ -233,9 +233,7 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
                       <SelectValue placeholder="Select account type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="admin">Administrator</SelectItem>
                       <SelectItem value="customer">Customer</SelectItem>
-                      <SelectItem value="rider">Delivery Rider</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

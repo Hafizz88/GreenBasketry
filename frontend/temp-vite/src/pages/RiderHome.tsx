@@ -62,6 +62,7 @@ interface Assignment {
   address_line: string;
   total_amount: number;
   delivery_status: string;
+  order_status: string;
 }
 
 interface Notification {
@@ -141,6 +142,7 @@ const RiderHome: React.FC = () => {
       
       fetchRiderData(riderId);
       fetchAvailableOrders();
+      fetchCurrentAssignments();
     } catch (error) {
       console.error('Error parsing user data:', error);
       navigate('/login');
@@ -223,13 +225,55 @@ const RiderHome: React.FC = () => {
     }
   };
 
+  const fetchCurrentAssignments = async () => {
+    if (!rider?.rider_id) {
+      console.log('No rider ID, cannot fetch assignments');
+      return;
+    }
+    try {
+      console.log('Fetching current assignments for rider:', rider.rider_id);
+      const response = await fetch(
+        `http://localhost:5001/api/rider/${rider.rider_id}/current-assignments`,
+        { headers: getAuthHeaders() }
+      );
+      if (response.ok) {
+        const assignments = await response.json();
+        console.log('Current assignments fetched:', assignments);
+        setCurrentAssignments(assignments);
+      } else {
+        const error = await response.json();
+        console.error('Error response:', error);
+        setCurrentAssignments([]);
+      }
+    } catch (error) {
+      console.error('Error fetching current assignments:', error);
+      setCurrentAssignments([]);
+    }
+  };
+
   // When zone or availability changes, fetch orders
   useEffect(() => {
     if (rider?.available && currentZone) {
       fetchAvailableOrders();
     }
+    // Fetch current assignments when rider data changes
+    if (rider?.rider_id) {
+      fetchCurrentAssignments();
+    }
     // eslint-disable-next-line
-  }, [rider?.available, currentZone]);
+  }, [rider?.available, currentZone, rider?.rider_id]);
+
+  // Add auto-refresh effect
+  useEffect(() => {
+    if (currentView === 'dashboard') {
+      const interval = setInterval(() => {
+        fetchRiderData(rider?.rider_id);
+        fetchAvailableOrders();
+        fetchCurrentAssignments();
+      }, 30000); // 30 seconds
+      return () => clearInterval(interval);
+    }
+  }, [currentView, rider?.rider_id, currentZone]);
 
   // Add location update function
   const updateLocation = async () => {
@@ -302,6 +346,7 @@ const RiderHome: React.FC = () => {
         alert('Order accepted successfully!');
         fetchAvailableOrders();
         fetchRiderData(rider.rider_id);
+        fetchCurrentAssignments(); // Fetch updated assignments after accepting order
       }
     } catch (error) {
       console.error('Error accepting order:', error);
@@ -320,6 +365,7 @@ const RiderHome: React.FC = () => {
       if (response.ok) {
         alert('Arrival marked successfully!');
         fetchRiderData(rider.rider_id);
+        fetchCurrentAssignments(); // Fetch updated assignments after marking arrival
       } else {
         const error = await response.json();
         alert('Failed to mark arrival: ' + (error.error || 'Unknown error'));
@@ -342,6 +388,7 @@ const RiderHome: React.FC = () => {
       if (response.ok) {
         alert('Payment confirmed and delivery completed!');
         fetchRiderData(rider.rider_id);
+        fetchCurrentAssignments(); // Fetch updated assignments after confirming payment
       } else {
         const error = await response.json();
         alert('Failed to confirm payment: ' + (error.error || 'Unknown error'));
@@ -404,6 +451,7 @@ const RiderHome: React.FC = () => {
       if (response.ok) {
         alert('Marked as failed and customer notified.');
         fetchRiderData(rider.rider_id);
+        fetchCurrentAssignments(); // Fetch updated assignments after marking as failed
       } else {
         const error = await response.json();
         alert('Failed to mark as failed: ' + (error.error || 'Unknown error'));
@@ -425,6 +473,7 @@ const RiderHome: React.FC = () => {
       if (response.ok) {
         alert('Order cancellation processed. Please return to base.');
         fetchRiderData(rider.rider_id);
+        fetchCurrentAssignments(); // Fetch updated assignments after cancellation
       } else {
         const error = await response.json();
         alert('Failed to process cancellation: ' + (error.error || 'Unknown error'));
@@ -445,6 +494,7 @@ const RiderHome: React.FC = () => {
       });
       if (response.ok) {
         alert('Success notification sent!');
+        fetchCurrentAssignments(); // Fetch updated assignments after sending notification
       } else {
         const error = await response.json();
         alert('Failed to send notification: ' + (error.error || 'Unknown error'));
@@ -513,9 +563,23 @@ const RiderHome: React.FC = () => {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Current Status
-                  </Typography>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="h6" gutterBottom>
+                      Current Status
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Refresh />}
+                      onClick={() => {
+                        fetchRiderData(rider?.rider_id);
+                        fetchAvailableOrders();
+                        fetchCurrentAssignments();
+                      }}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
@@ -577,121 +641,115 @@ const RiderHome: React.FC = () => {
             </Grid>
             
             {/* Assignments Card */}
-            <div style={{ background: '#fff', borderRadius: 12, boxShadow: '0 2px 8px #0001', padding: 24, gridColumn: 'span 2' }}>
-              <h3 style={{ marginTop: 0 }}>Current Deliveries</h3>
-              {currentAssignments.length === 0 ? (
-                <p>No active deliveries</p>
-              ) : (
-                <ul style={{ listStyle: 'none', padding: 0 }}>
-                  {currentAssignments.map(a => (
-                    <li key={a.delivery_id} style={{ marginBottom: 16, borderBottom: '1px solid #eee', paddingBottom: 8 }}>
-                      <div><strong>Order #{a.order_id}</strong> - {a.delivery_status}</div>
-                      <div>Customer: {a.customer_name}</div>
-                      <div>Address: {a.address_line}</div>
-                      <div>Amount: ৳{a.total_amount}</div>
-                      {/* Action Buttons: Arrived or Confirm Payment */}
-                      <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
-                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
-                          <button
-                            onClick={() => markAsFailed(a.delivery_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #ff5858 0%, #f09819 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #ff585833',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            ❌ Mark as Failed
-                          </button>
-                        )}
-                        {a.delivery_status === 'assigned' && (
-                          <button
-                            onClick={() => handleOrderCancellation(a.delivery_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #dc2626 0%, #b91c1c 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #dc262633',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            🚫 Order Cancelled
-                          </button>
-                        )}
-                        {a.delivery_status === 'out_for_delivery' && (
-                          <button
-                            onClick={() => confirmPayment(a.order_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #f7971e 0%, #ffd200 100%)',
-                              color: '#333',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #ffd20033',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            💰 Mark as Delivered
-                          </button>
-                        )}
-                        {a.delivery_status === 'delivered' && (
-                          <button
-                            onClick={() => sendSuccessNotification(a.delivery_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #43cea233',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            🎉 Send Success Notification
-                          </button>
-                        )}
-                        {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' ? (
-                          <button
-                            onClick={() => markArrival(a.delivery_id)}
-                            style={{
-                              background: 'linear-gradient(90deg, #43cea2 0%, #185a9d 100%)',
-                              color: '#fff',
-                              border: 'none',
-                              borderRadius: 8,
-                              padding: '0.5rem 1.5rem',
-                              fontWeight: 700,
-                              fontSize: 16,
-                              boxShadow: '0 2px 8px #43cea233',
-                              cursor: 'pointer',
-                              transition: 'background 0.2s',
-                            }}
-                          >
-                            🚚 Mark Arrived
-                          </button>
-                        ) : null}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
+            <Grid item xs={12} md={8}>
+              <Card>
+                <CardContent>
+                  <Box display="flex" alignItems="center" justifyContent="space-between">
+                    <Typography variant="h6" gutterBottom>
+                      Current Deliveries
+                    </Typography>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<Refresh />}
+                      onClick={() => {
+                        fetchRiderData(rider?.rider_id);
+                        fetchAvailableOrders();
+                        fetchCurrentAssignments();
+                      }}
+                    >
+                      Refresh
+                    </Button>
+                  </Box>
+                  {currentAssignments.length === 0 ? (
+                    <Typography color="text.secondary">
+                      No active deliveries
+                    </Typography>
+                  ) : (
+                    <List>
+                      {currentAssignments.filter(a => a.order_status !== 'restored').map(a => (
+                        <ListItem key={a.delivery_id} sx={{ borderBottom: '1px solid #eee', paddingBottom: 2 }}>
+                          <ListItemText
+                            primary={
+                              <Box>
+                                <Typography variant="subtitle1">
+                                  <strong>Order #{a.order_id}</strong> - {a.delivery_status}
+                                </Typography>
+                                <Typography variant="body2">
+                                  Customer: {a.customer_name}
+                                </Typography>
+                                <Typography variant="body2">
+                                  Address: {a.address_line}
+                                </Typography>
+                                <Typography variant="body2">
+                                  Amount: ৳{a.total_amount}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={
+                              a.delivery_status === 'failed' ? (
+                                <Box sx={{ mt: 1 }}>
+                                  <Typography color="error">
+                                    Order failed. Please return items to inventory.
+                                  </Typography>
+                                </Box>
+                              ) : (
+                                <Box sx={{ mt: 1 }}>
+                                  {a.delivery_status === 'assigned' && (
+                                    <Button
+                                      variant="contained"
+                                      color="error"
+                                      size="small"
+                                      onClick={() => handleOrderCancellation(a.delivery_id)}
+                                      sx={{ mr: 1, mb: 1 }}
+                                    >
+                                      🚫 Order Cancelled
+                                    </Button>
+                                  )}
+                                  {a.delivery_status === 'out_for_delivery' && (
+                                    <Button
+                                      variant="contained"
+                                      color="warning"
+                                      size="small"
+                                      onClick={() => confirmPayment(a.order_id)}
+                                      sx={{ mr: 1, mb: 1 }}
+                                    >
+                                      💰 Mark as Delivered
+                                    </Button>
+                                  )}
+                                  {a.delivery_status === 'delivered' && (
+                                    <Button
+                                      variant="contained"
+                                      color="success"
+                                      size="small"
+                                      onClick={() => sendSuccessNotification(a.delivery_id)}
+                                      sx={{ mr: 1, mb: 1 }}
+                                    >
+                                      🎉 Send Success Notification
+                                    </Button>
+                                  )}
+                                  {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
+                                    <Button
+                                      variant="contained"
+                                      color="success"
+                                      size="small"
+                                      onClick={() => markArrival(a.delivery_id)}
+                                      sx={{ mr: 1, mb: 1 }}
+                                    >
+                                      🚚 Mark Arrived
+                                    </Button>
+                                  )}
+                                </Box>
+                              )
+                            }
+                          />
+                        </ListItem>
+                      ))}
+                    </List>
+                  )}
+                </CardContent>
+              </Card>
+            </Grid>
           </Grid>
         )}
         

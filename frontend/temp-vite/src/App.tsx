@@ -33,6 +33,8 @@ import OrderStatusPage from './pages/OrderStatusPage';
 import CustomerOrdersPage from './pages/CustomerOrdersPage';
 import CancellableOrdersPage from './pages/CancellableOrdersPage';
 import ProtectedRoute from "./components/ProtectedRoute";
+import ManageRiders from './pages/ManageRiders';
+import ManageAdmins from './pages/ManageAdmins';
 
 const queryClient = new QueryClient();
 
@@ -188,6 +190,8 @@ const App = () => {
               <Route path="set-discount" element={<SetDiscount />} />
               <Route path="complaints" element={<ComplaintsAdminPage />} />
               <Route path="cancelled-orders" element={<CancelledOrdersPage />} />
+              <Route path="manage-riders" element={<ManageRiders />} />
+              <Route path="manage-admins" element={<ManageAdmins />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
@@ -208,15 +212,9 @@ const App = () => {
                 <span id="auth-dialog-desc">{authMode === 'login' ? 'Sign in to your account to continue shopping.' : 'Create an account to start shopping with GreenBasketry.'}</span>
               </div>
               {authMode === 'login' ? (
-                <Login 
-                  onClose={handleCloseAuth}
-                  onSwitchToSignup={handleSwitchToSignup}
-                />
+                <Login />
               ) : (
-                <Signup 
-                  onClose={handleCloseAuth}
-                  onSwitchToLogin={handleSwitchToLogin}
-                />
+                <Signup />
               )}
             </DialogContent>
           </Dialog>

@@ -11,7 +11,8 @@ import {
   updateCoupon,
   resolveComplaint,
   setProductDiscount,
-  runDiscountExpiry
+  runDiscountExpiry,
+  getAllAdmins
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifytoken.js';
 import { upload } from '../controllers/cloudinaryController.js';
@@ -41,5 +42,6 @@ router.put('/coupons/:id', verifyToken, updateCoupon);
 // Route to resolve a complaint
 router.patch('/complaints/:id/resolve', verifyToken, resolveComplaint);
 router.post('/run-discount-expiry', verifyToken, runDiscountExpiry);
+router.get('/admins', verifyToken, getAllAdmins);
 
 export default router;

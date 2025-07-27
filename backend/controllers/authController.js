@@ -61,12 +61,13 @@ const signup = async (req, res) => {
   }
 
   try {
-    const hash = await hashPassword(password);
+    // const hash = await hashPassword(password);
+    const plainPassword = password;
 
     if (role === 'admin') {
       await client.query(
         `INSERT INTO admins(name, email, password_hash, phone) VALUES($1, $2, $3, $4)`,
-        [name, email, hash, phone]
+        [name, email, plainPassword, phone]
       );
       const result = await client.query(`SELECT admin_id FROM admins WHERE email = $1`, [email]);
       const admin_id = result.rows[0].admin_id;
@@ -100,7 +101,7 @@ else if (role === 'customer') {
     [
       name,
       email,
-      hash,
+      /* hash */ plainPassword,
       phone,
       address_line,
       thana_id,
@@ -127,7 +128,7 @@ else if (role === 'rider') {
 
       await client.query(
         `INSERT INTO riders(name, email, password_hash, phone, vehicle_info) VALUES($1, $2, $3, $4, $5)`,
-        [name, email, hash, phone, vehicle_info]
+        [name, email, plainPassword, phone, vehicle_info]
       );
 
       const result = await client.query(`SELECT rider_id FROM riders WHERE email = $1`, [email]);

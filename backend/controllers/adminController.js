@@ -245,3 +245,13 @@ export const runDiscountExpiry = async (req, res) => {
     res.status(500).json({ error: 'Failed to reset discounts.' });
   }
 };
+
+// Get all admins
+export const getAllAdmins = async (req, res) => {
+  try {
+    const result = await client.query('SELECT admin_id, name, email, phone FROM admins');
+    res.json(result.rows);
+  } catch (err) {
+    res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+};

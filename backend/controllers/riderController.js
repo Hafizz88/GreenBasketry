@@ -502,8 +502,7 @@ const getRiderCurrentAssignments = async (req, res) => {
        JOIN addresses a ON o.address_id = a.address_id
        JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
       WHERE da.rider_id = $1 
-         AND o.order_status != 'cancelled'
-         AND d.delivery_status NOT IN ('delivered', 'failed')
+         AND o.order_status != 'restored'
       ORDER BY da.assigned_at DESC`,
       [riderId]
     );
