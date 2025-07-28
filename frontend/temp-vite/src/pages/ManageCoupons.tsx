@@ -38,17 +38,13 @@ const ManageCoupons: React.FC = () => {
   const fetchCoupons = async () => {
     setLoading(true);
     try {
-      // If userId is present, fetch only eligible coupons
-      const userId = localStorage.getItem('userId');
-      let url = 'http://localhost:5001/api/admin/coupons';
-      if (userId) {
-        url += `?customer_id=${userId}`;
-      }
-      const res = await axios.get(url, getAuthHeader());
+      // For admin panel, fetch all coupons without customer_id filter
+      const res = await axios.get('http://localhost:5001/api/admin/coupons', getAuthHeader());
       setCoupons(res.data);
       setError('');
     } catch (err) {
-      setError('Currently there is no coupon');
+      console.error('Error fetching coupons:', err);
+      setError('Failed to fetch coupons');
     } finally {
       setLoading(false);
     }

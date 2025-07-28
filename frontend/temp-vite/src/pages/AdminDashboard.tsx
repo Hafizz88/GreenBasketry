@@ -345,7 +345,7 @@ const AdminDashboardContent: React.FC = () => {
 
 const AdminDashboard: React.FC = () => {
   return (
-    <ThemeProvider theme={muiTheme}>
+    <ThemeProvider theme={muiTheme} {...({} as any)}>
       <CssBaseline />
       <AdminDashboardContent />
     </ThemeProvider>

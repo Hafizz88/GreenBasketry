@@ -171,7 +171,7 @@ export const getAllCoupons = async (req, res) => {
       res.json(result.rows);
     } else {
       // Fallback: return all active coupons
-      const result = await client.query('SELECT * FROM coupons WHERE is_active = true');
+      const result = await client.query('SELECT * FROM coupons WHERE is_active = true ORDER BY coupon_id DESC');
     res.json(result.rows);
     }
   } catch (err) {
