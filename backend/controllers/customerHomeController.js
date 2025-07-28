@@ -24,7 +24,7 @@ const getCustomerHomeData = async (req, res) => {
               p.discount_percentage, p.points_rewarded, w.added_on
        FROM wishlist w
        JOIN products p ON w.product_id = p.product_id
-       WHERE w.customer_id = $1
+       WHERE w.customer_id = $1 AND p.stock > 0
        ORDER BY w.added_on DESC
        LIMIT 6`,
       [customerId]
@@ -38,7 +38,7 @@ const getCustomerHomeData = async (req, res) => {
        JOIN carts c ON o.cart_id = c.cart_id
        JOIN cart_items ci ON c.cart_id = ci.cart_id
        JOIN products p ON ci.product_id = p.product_id
-       WHERE c.customer_id = $1 AND o.order_status = 'delivered'
+       WHERE c.customer_id = $1 AND o.order_status = 'delivered' AND p.stock > 0
        ORDER BY o.order_date DESC
        LIMIT 6`,
       [customerId]
@@ -58,6 +58,7 @@ const getCustomerHomeData = async (req, res) => {
        WHERE dz.zone_name = $1 
          AND o.order_status = 'delivered'
          AND o.order_date >= CURRENT_DATE - INTERVAL '30 days'
+         AND p.stock > 0
        GROUP BY p.product_id, p.name, p.price, p.stock, p.description, p.image_url,
                 p.discount_percentage, p.points_rewarded
        ORDER BY times_ordered DESC
@@ -176,6 +177,7 @@ const getTopSellingByZone = async (req, res) => {
        WHERE dz.zone_name = $1 
          AND o.order_status = 'delivered'
          AND o.order_date >= CURRENT_DATE - INTERVAL '30 days'
+         AND p.stock > 0
        GROUP BY p.product_id, p.name, p.price, p.stock, p.description, p.image_url,
                 p.discount_percentage, p.points_rewarded
        ORDER BY times_ordered DESC, avg_rating DESC
