@@ -291,3 +291,179 @@ CREATE TRIGGER trg_coupons_after_delete
 AFTER DELETE ON public.coupons
 FOR EACH ROW
 EXECUTE FUNCTION log_coupon_delete();
+
+-- Admin logging functions and triggers
+CREATE OR REPLACE FUNCTION log_admin_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    NEW.admin_id::TEXT,
+    now(),
+    'CREATE',
+    'admins',
+    NEW.admin_id::TEXT,
+    'New Admin created: ' || NEW.name || ' (ID: ' || NEW.admin_id || '). Email: ' || NEW.email || '.'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_admin_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    NEW.admin_id::TEXT,
+    now(),
+    'UPDATE',
+    'admins',
+    NEW.admin_id::TEXT,
+    'Admin updated: ' || NEW.name || ' (ID: ' || NEW.admin_id || '). Email: ' || NEW.email || '.'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_admin_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    OLD.admin_id::TEXT,
+    now(),
+    'DELETE',
+    'admins',
+    OLD.admin_id::TEXT,
+    'Admin deleted: ' || OLD.name || ' (ID: ' || OLD.admin_id || '). Email: ' || OLD.email || '.'
+  );
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop admin triggers if they already exist
+DROP TRIGGER IF EXISTS trg_admins_after_insert ON public.admins;
+DROP TRIGGER IF EXISTS trg_admins_after_update ON public.admins;
+DROP TRIGGER IF EXISTS trg_admins_after_delete ON public.admins;
+
+-- Create admin triggers
+CREATE TRIGGER trg_admins_after_insert
+AFTER INSERT ON public.admins
+FOR EACH ROW
+EXECUTE FUNCTION log_admin_insert();
+
+CREATE TRIGGER trg_admins_after_update
+AFTER UPDATE ON public.admins
+FOR EACH ROW
+EXECUTE FUNCTION log_admin_update();
+
+CREATE TRIGGER trg_admins_after_delete
+AFTER DELETE ON public.admins
+FOR EACH ROW
+EXECUTE FUNCTION log_admin_delete();
+
+-- Rider logging functions and triggers
+CREATE OR REPLACE FUNCTION log_rider_insert()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    'SYSTEM',
+    now(),
+    'CREATE',
+    'riders',
+    NEW.rider_id::TEXT,
+    'New Rider created: ' || NEW.name || ' (ID: ' || NEW.rider_id || '). Email: ' || NEW.email || ', Vehicle: ' || NEW.vehicle_info || '.'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_rider_update()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    'SYSTEM',
+    now(),
+    'UPDATE',
+    'riders',
+    NEW.rider_id::TEXT,
+    'Rider updated: ' || NEW.name || ' (ID: ' || NEW.rider_id || '). Email: ' || NEW.email || ', Vehicle: ' || NEW.vehicle_info || '.'
+  );
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE OR REPLACE FUNCTION log_rider_delete()
+RETURNS TRIGGER AS $$
+BEGIN
+  INSERT INTO greenbasketary_admin_log (
+    admin_user_id,
+    timestamp,
+    action_type,
+    table_name,
+    record_id,
+    description
+  ) VALUES (
+    'SYSTEM',
+    now(),
+    'DELETE',
+    'riders',
+    OLD.rider_id::TEXT,
+    'Rider deleted: ' || OLD.name || ' (ID: ' || OLD.rider_id || '). Email: ' || OLD.email || ', Vehicle: ' || OLD.vehicle_info || '.'
+  );
+  RETURN OLD;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Drop rider triggers if they already exist
+DROP TRIGGER IF EXISTS trg_riders_after_insert ON public.riders;
+DROP TRIGGER IF EXISTS trg_riders_after_update ON public.riders;
+DROP TRIGGER IF EXISTS trg_riders_after_delete ON public.riders;
+
+-- Create rider triggers
+CREATE TRIGGER trg_riders_after_insert
+AFTER INSERT ON public.riders
+FOR EACH ROW
+EXECUTE FUNCTION log_rider_insert();
+
+CREATE TRIGGER trg_riders_after_update
+AFTER UPDATE ON public.riders
+FOR EACH ROW
+EXECUTE FUNCTION log_rider_update();
+
+CREATE TRIGGER trg_riders_after_delete
+AFTER DELETE ON public.riders
+FOR EACH ROW
+EXECUTE FUNCTION log_rider_delete();

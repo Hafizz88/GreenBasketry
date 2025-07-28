@@ -563,23 +563,9 @@ const RiderHome: React.FC = () => {
             <Grid item xs={12} md={4}>
               <Card>
                 <CardContent>
-                  <Box display="flex" alignItems="center" justifyContent="space-between">
-                    <Typography variant="h6" gutterBottom>
-                      Current Status
-                    </Typography>
-                    <Button
-                      variant="outlined"
-                      size="small"
-                      startIcon={<Refresh />}
-                      onClick={() => {
-                        fetchRiderData(rider?.rider_id);
-                        fetchAvailableOrders();
-                        fetchCurrentAssignments();
-                      }}
-                    >
-                      Refresh
-                    </Button>
-                  </Box>
+                  <Typography variant="h6" gutterBottom>
+                    Current Status
+                  </Typography>
                   
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">

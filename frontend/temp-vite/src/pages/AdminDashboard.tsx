@@ -37,7 +37,9 @@ import {
   TrendingUp as TrendingUpIcon,
   ShoppingCart as OrdersIcon,
   People as PeopleIcon,
-  Report as ComplaintsIcon
+  Report as ComplaintsIcon,
+  Assessment as AssessmentIcon,
+  History as HistoryIcon
 } from '@mui/icons-material';
 import ComplaintsAdminPage from './ComplaintsAdminPage';
 
@@ -69,6 +71,8 @@ const navLinks: NavLink[] = [
   { to: 'cancelled-orders', label: 'Cancelled Orders', icon: <OrdersIcon /> },
   { to: 'manage-riders', label: 'Manage Riders', icon: <PeopleIcon /> },
   { to: 'manage-admins', label: 'Manage Admins', icon: <AdminIcon /> },
+  { to: 'rider-stats', label: 'Rider Statistics', icon: <AssessmentIcon /> },
+  { to: 'activity-logs', label: 'Activity Logs', icon: <HistoryIcon /> },
 ];
 
 const AdminDashboardContent: React.FC = () => {

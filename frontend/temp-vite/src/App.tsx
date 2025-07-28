@@ -35,6 +35,8 @@ import CancellableOrdersPage from './pages/CancellableOrdersPage';
 import ProtectedRoute from "./components/ProtectedRoute";
 import ManageRiders from './pages/ManageRiders';
 import ManageAdmins from './pages/ManageAdmins';
+import RiderStats from './pages/RiderStats';
+import AdminActivityLogs from './pages/AdminActivityLogs';
 
 const queryClient = new QueryClient();
 
@@ -192,6 +194,8 @@ const App = () => {
               <Route path="cancelled-orders" element={<CancelledOrdersPage />} />
               <Route path="manage-riders" element={<ManageRiders />} />
               <Route path="manage-admins" element={<ManageAdmins />} />
+              <Route path="rider-stats" element={<RiderStats />} />
+              <Route path="activity-logs" element={<AdminActivityLogs />} />
             </Route>
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />

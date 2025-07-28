@@ -12,7 +12,11 @@ import {
   resolveComplaint,
   setProductDiscount,
   runDiscountExpiry,
-  getAllAdmins
+  getAllAdmins,
+  getRiderStats,
+  getAllRidersWithStats,
+  getAdminActivityLogs,
+  getAdminActivitySummary
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifytoken.js';
 import { upload } from '../controllers/cloudinaryController.js';
@@ -43,5 +47,13 @@ router.put('/coupons/:id', verifyToken, updateCoupon);
 router.patch('/complaints/:id/resolve', verifyToken, resolveComplaint);
 router.post('/run-discount-expiry', verifyToken, runDiscountExpiry);
 router.get('/admins', verifyToken, getAllAdmins);
+
+// Rider statistics routes
+router.get('/rider-stats/:riderId', verifyToken, getRiderStats);
+router.get('/riders-with-stats', verifyToken, getAllRidersWithStats);
+
+// Admin activity log routes
+router.get('/activity-logs', verifyToken, getAdminActivityLogs);
+router.get('/activity-summary', verifyToken, getAdminActivitySummary);
 
 export default router;
