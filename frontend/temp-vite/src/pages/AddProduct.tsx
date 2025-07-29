@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from 'axios';
+import { getAuthHeadersFormData } from '../utils/auth';
 
 interface ProductForm {
   name: string;
@@ -13,15 +14,7 @@ interface ProductForm {
   discount_finished: string;
 }
 
-const getAuthHeader = () => {
-  const token = localStorage.getItem('token');
-  return {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-Type': 'multipart/form-data',
-    },
-  };
-};
+// Using the utility function from auth.ts instead of local getAuthHeader
 
 const AddProduct: React.FC = () => {
   const [form, setForm] = useState<ProductForm>({
@@ -100,7 +93,7 @@ const AddProduct: React.FC = () => {
       await axios.post(
         'http://localhost:5001/api/admin/add-product',
         formData,
-        getAuthHeader()
+        getAuthHeadersFormData()
       );
       
       setSuccess('Product added successfully!');
@@ -123,7 +116,14 @@ const AddProduct: React.FC = () => {
       if (fileInput) fileInput.value = '';
       
     } catch (err: any) {
-      setError(err.response?.data?.error || 'Failed to add product');
+      const errorMessage = err.response?.data?.error || 'Failed to add product';
+      const errorDetails = err.response?.data?.details || '';
+      
+      if (errorMessage.includes('Invalid admin session') || errorMessage.includes('Please log in again')) {
+        setError(`${errorMessage} ${errorDetails ? `(${errorDetails})` : ''}. Please log out and log in with a valid admin account.`);
+      } else {
+        setError(errorMessage);
+      }
     } finally {
       setLoading(false);
     }

@@ -8,7 +8,28 @@ export const addProduct = async (req, res) => {
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   let imageUrl = null;
 
+  // Validate admin_id
+  if (!admin_id) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+
   try {
+    // First, verify that the admin exists
+    const adminCheck = await client.query(
+      'SELECT admin_id, name FROM admins WHERE admin_id = $1',
+      [admin_id]
+    );
+
+    if (adminCheck.rows.length === 0) {
+      console.error(`Admin with ID ${admin_id} not found in database`);
+      return res.status(401).json({ 
+        error: 'Invalid admin session. Please log in again.',
+        details: `Admin ID ${admin_id} does not exist in database. Valid admin IDs: 1, 4, 5`
+      });
+    }
+
+    console.log(`✅ Admin verified: ${adminCheck.rows[0].name} (ID: ${admin_id})`);
+
     // Upload image if present
     if (req.file) {
       // Create folder path based on category
@@ -24,7 +45,16 @@ export const addProduct = async (req, res) => {
     res.status(201).json(result.rows[0]);
   } catch (err) {
     console.error('Error adding product:', err);
-    res.status(500).json({ error: 'Failed to add product' });
+    
+    // Provide more specific error messages
+    if (err.code === '23503' && err.constraint === 'products_updated_by_admin_id_fkey') {
+      res.status(401).json({ 
+        error: 'Invalid admin session. Please log in again.',
+        details: `Admin ID ${admin_id} does not exist in database`
+      });
+    } else {
+      res.status(500).json({ error: 'Failed to add product' });
+    }
   }
 };
 

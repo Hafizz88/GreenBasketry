@@ -24,7 +24,8 @@ import {
   CardContent,
   Grid,
   Paper,
-  Chip
+  Chip,
+  Button
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -39,9 +40,11 @@ import {
   People as PeopleIcon,
   Report as ComplaintsIcon,
   Assessment as AssessmentIcon,
-  History as HistoryIcon
+  History as HistoryIcon,
+  Logout as LogoutIcon
 } from '@mui/icons-material';
 import ComplaintsAdminPage from './ComplaintsAdminPage';
+import { logout, getCurrentUser } from '../utils/auth';
 
 // Constants
 const drawerWidth = 280;
@@ -80,9 +83,17 @@ const AdminDashboardContent: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = React.useState(false);
+  const currentUser = getCurrentUser();
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleLogout = () => {
+    const confirmed = window.confirm('Are you sure you want to logout?');
+    if (confirmed) {
+      logout();
+    }
   };
 
   const drawer = (
@@ -111,9 +122,14 @@ const AdminDashboardContent: React.FC = () => {
         <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
           Admin Panel
         </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.8 }}>
+        <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
           GreenBasketry Management
         </Typography>
+        {currentUser && (
+          <Typography variant="caption" sx={{ opacity: 0.7 }}>
+            Logged in as: {currentUser.name || currentUser.email || 'Admin'}
+          </Typography>
+        )}
       </Box>
 
       <Divider />
@@ -156,6 +172,25 @@ const AdminDashboardContent: React.FC = () => {
 
       {/* Footer */}
       <Box sx={{ p: 2, borderTop: 1, borderColor: 'divider' }}>
+        <Button
+          fullWidth
+          variant="outlined"
+          color="error"
+          startIcon={<LogoutIcon />}
+          onClick={handleLogout}
+          sx={{
+            mb: 2,
+            borderColor: 'error.main',
+            color: 'error.main',
+            '&:hover': {
+              backgroundColor: 'error.main',
+              color: 'white',
+              borderColor: 'error.main',
+            },
+          }}
+        >
+          Logout
+        </Button>
         <Typography variant="body2" color="text.secondary" align="center">
           © 2024 GreenBasketry
         </Typography>
@@ -185,9 +220,16 @@ const AdminDashboardContent: React.FC = () => {
             >
               <MenuIcon />
             </IconButton>
-            <Typography variant="h6" noWrap component="div">
+            <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
               Admin Dashboard
             </Typography>
+            <IconButton
+              color="inherit"
+              onClick={handleLogout}
+              aria-label="logout"
+            >
+              <LogoutIcon />
+            </IconButton>
           </Toolbar>
         </AppBar>
       )}
@@ -295,6 +337,26 @@ const AdminDashboardContent: React.FC = () => {
                     gap: 2,
                   }}
                 >
+                  <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+                    <Button
+                      variant="outlined"
+                      color="error"
+                      size="small"
+                      startIcon={<LogoutIcon />}
+                      onClick={handleLogout}
+                      sx={{
+                        borderColor: 'error.main',
+                        color: 'error.main',
+                        '&:hover': {
+                          backgroundColor: 'error.main',
+                          color: 'white',
+                          borderColor: 'error.main',
+                        },
+                      }}
+                    >
+                      Logout
+                    </Button>
+                  </Box>
                   <Typography variant="h6" color="text.secondary">
                     Quick Stats
                   </Typography>

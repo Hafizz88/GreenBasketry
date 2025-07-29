@@ -1,29 +1,36 @@
-import 'dotenv/config'; 
-import { Client } from 'pg';
+import { client } from './db.js';
 
-const client = new Client({
-  host: process.env.PG_HOST,
-  port: parseInt(process.env.PG_PORT, 10),
-  user: process.env.PG_USER,
-  password: process.env.PG_PASSWORD,
-  database: process.env.PG_DATABASE,
-  ssl: false,
-});
-
-(async () => {
+async function testDB() {
   try {
-    await client.connect();
-    console.log('✅ Connected successfully');
-
-    // Run a simple query just to test
-    const res = await client.query('SELECT * FROM customers');
-    console.log('🕒 Server time:', res.rows[0]);
-    console.log('✅ Query executed successfully');
-    console.log('👥 Customers:', res.rows);
-    await client.end(); // Graceful disconnect
-    console.log('🛑 Disconnected gracefully');
+    console.log('Testing database connection...');
+    
+    // Test basic connection
+    const result = await client.query('SELECT NOW()');
+    console.log('✅ Database connected. Current time:', result.rows[0].now);
+    
+    // Check if admins table exists
+    const tableCheck = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'admins'
+      );
+    `);
+    console.log('Admins table exists:', tableCheck.rows[0].exists);
+    
+    if (tableCheck.rows[0].exists) {
+      // Check admins
+      const admins = await client.query('SELECT * FROM admins');
+      console.log('Admins count:', admins.rows.length);
+      console.log('Admins:', admins.rows);
+    }
+    
   } catch (err) {
-    console.error('❌ Connection error:', err.message);
+    console.error('❌ Database error:', err);
+  } finally {
+    await client.end();
   }
-})();
+}
+
+testDB();
 

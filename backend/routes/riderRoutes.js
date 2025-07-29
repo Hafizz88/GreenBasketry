@@ -20,7 +20,6 @@ import {
   getRiderNotifications,
   markNotificationAsRead,
   getAvailableRiders,
-  sendSuccessNotification,
   handleOrderCancellation
 } from '../controllers/riderController.js';
 
@@ -50,7 +49,6 @@ router.post('/assign-delivery', verifyToken, assignDeliveryToRider);
 router.put('/delivery/:deliveryId/status', verifyToken, updateDeliveryAndOrderStatus);
 router.put('/delivery/:deliveryId/set-time', verifyToken, setDeliveryTime);
 router.put('/delivery/:deliveryId/arrival', verifyToken, markArrival);
-router.post('/delivery/:deliveryId/success-notification', verifyToken, sendSuccessNotification);
 
 // Order Cancellation
 router.post('/delivery/:deliveryId/cancel', verifyToken, handleOrderCancellation);

@@ -484,27 +484,6 @@ const RiderHome: React.FC = () => {
     }
   };
 
-  const sendSuccessNotification = async (deliveryId: number) => {
-    if (!rider?.rider_id) return;
-    try {
-      const response = await fetch(`http://localhost:5001/api/rider/delivery/${deliveryId}/success-notification`, {
-        method: 'POST',
-        headers: getAuthHeaders(),
-        body: JSON.stringify({ message: 'Your order was delivered successfully! Thank you for shopping with us.', riderId: rider.rider_id })
-      });
-      if (response.ok) {
-        alert('Success notification sent!');
-        fetchCurrentAssignments(); // Fetch updated assignments after sending notification
-      } else {
-        const error = await response.json();
-        alert('Failed to send notification: ' + (error.error || 'Unknown error'));
-      }
-    } catch (error) {
-      console.error('Error sending notification:', error);
-      alert('Error sending notification.');
-    }
-  };
-
   if (isLoading) {
     return (
       <Box display="flex" flexDirection="column" alignItems="center" justifyContent="center" minHeight="80vh">
@@ -589,7 +568,7 @@ const RiderHome: React.FC = () => {
 
                   <Box sx={{ mb: 2 }}>
                     <Typography variant="body2" color="text.secondary">
-                      Active Deliveries: {currentAssignments.length}
+                      Active Deliveries: {currentAssignments.filter(a => a.order_status !== 'restored' && a.delivery_status !== 'delivered').length}
                     </Typography>
                   </Box>
 
@@ -653,14 +632,18 @@ const RiderHome: React.FC = () => {
                     </Typography>
                   ) : (
                     <List>
-                      {currentAssignments.filter(a => a.order_status !== 'restored').map(a => (
+                      {currentAssignments
+                        .filter(a => a.order_status !== 'restored' && a.delivery_status !== 'delivered')
+                        .map(a => (
                         <ListItem key={a.delivery_id} sx={{ borderBottom: '1px solid #eee', paddingBottom: 2 }}>
                           <ListItemText
                             primary={
+                              <Typography variant="subtitle1">
+                                <strong>Order #{a.order_id}</strong> - {a.delivery_status}
+                              </Typography>
+                            }
+                            secondary={
                               <Box>
-                                <Typography variant="subtitle1">
-                                  <strong>Order #{a.order_id}</strong> - {a.delivery_status}
-                                </Typography>
                                 <Typography variant="body2">
                                   Customer: {a.customer_name}
                                 </Typography>
@@ -670,63 +653,60 @@ const RiderHome: React.FC = () => {
                                 <Typography variant="body2">
                                   Amount: ৳{a.total_amount}
                                 </Typography>
-                              </Box>
-                            }
-                            secondary={
-                              a.delivery_status === 'failed' ? (
-                                <Box sx={{ mt: 1 }}>
-                                  <Typography color="error">
+                                
+                                {a.delivery_status === 'failed' ? (
+                                  <Typography color="error" sx={{ mt: 1 }}>
                                     Order failed. Please return items to inventory.
                                   </Typography>
-                                </Box>
-                              ) : (
-                                <Box sx={{ mt: 1 }}>
-                                  {a.delivery_status === 'assigned' && (
-                                    <Button
-                                      variant="contained"
-                                      color="error"
-                                      size="small"
-                                      onClick={() => handleOrderCancellation(a.delivery_id)}
-                                      sx={{ mr: 1, mb: 1 }}
-                                    >
-                                      🚫 Order Cancelled
-                                    </Button>
-                                  )}
-                                  {a.delivery_status === 'out_for_delivery' && (
-                                    <Button
-                                      variant="contained"
-                                      color="warning"
-                                      size="small"
-                                      onClick={() => confirmPayment(a.order_id)}
-                                      sx={{ mr: 1, mb: 1 }}
-                                    >
-                                      💰 Mark as Delivered
-                                    </Button>
-                                  )}
-                                  {a.delivery_status === 'delivered' && (
-                                    <Button
-                                      variant="contained"
-                                      color="success"
-                                      size="small"
-                                      onClick={() => sendSuccessNotification(a.delivery_id)}
-                                      sx={{ mr: 1, mb: 1 }}
-                                    >
-                                      🎉 Send Success Notification
-                                    </Button>
-                                  )}
-                                  {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
-                                    <Button
-                                      variant="contained"
-                                      color="success"
-                                      size="small"
-                                      onClick={() => markArrival(a.delivery_id)}
-                                      sx={{ mr: 1, mb: 1 }}
-                                    >
-                                      🚚 Mark Arrived
-                                    </Button>
-                                  )}
-                                </Box>
-                              )
+                                ) : (
+                                  <Box sx={{ mt: 1 }}>
+                                    {a.delivery_status === 'assigned' && (
+                                      <Button
+                                        variant="contained"
+                                        color="error"
+                                        size="small"
+                                        onClick={() => handleOrderCancellation(a.delivery_id)}
+                                        sx={{ mr: 1, mb: 1 }}
+                                      >
+                                        🚫 Order Cancelled
+                                      </Button>
+                                    )}
+                                    {a.delivery_status === 'out_for_delivery' && (
+                                      <Button
+                                        variant="contained"
+                                        color="warning"
+                                        size="small"
+                                        onClick={() => confirmPayment(a.order_id)}
+                                        sx={{ mr: 1, mb: 1 }}
+                                      >
+                                        💰 Mark as Delivered
+                                      </Button>
+                                    )}
+                                    {a.delivery_status === 'delivered' && (
+                                      <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                        onClick={() => confirmPayment(a.order_id)}
+                                        sx={{ mr: 1, mb: 1 }}
+                                      >
+                                        💰 Mark as Delivered
+                                      </Button>
+                                    )}
+                                    {a.delivery_status !== 'out_for_delivery' && a.delivery_status !== 'failed' && a.delivery_status !== 'delivered' && (
+                                      <Button
+                                        variant="contained"
+                                        color="success"
+                                        size="small"
+                                        onClick={() => markArrival(a.delivery_id)}
+                                        sx={{ mr: 1, mb: 1 }}
+                                      >
+                                        🚚 Mark Arrived
+                                      </Button>
+                                    )}
+                                  </Box>
+                                )}
+                              </Box>
                             }
                           />
                         </ListItem>
@@ -778,27 +758,18 @@ const RiderHome: React.FC = () => {
                       <ListItem>
                         <ListItemText
                           primary={
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                              <Typography variant="h6">
-                                Order #{order.order_id}
-                              </Typography>
-                              <Typography variant="h6" color="primary">
-                                ৳{order.total_amount}
-                              </Typography>
-                            </Box>
+                            <Typography variant="h6">
+                              Order #{order.order_id} - ৳{order.total_amount}
+                            </Typography>
                           }
                           secondary={
-                            <Box>
-                              <Typography variant="body2">
-                                Customer: {order.customer_name} ({order.customer_phone})
-                              </Typography>
-                              <Typography variant="body2">
-                                Address: {order.address_line}
-                              </Typography>
-                              <Typography variant="body2">
-                                Zone: {order.zone_name}
-                              </Typography>
-                            </Box>
+                            <Typography variant="body2">
+                              Customer: {order.customer_name} ({order.customer_phone})
+                              <br />
+                              Address: {order.address_line}
+                              <br />
+                              Zone: {order.zone_name}
+                            </Typography>
                           }
                         />
                         <Button

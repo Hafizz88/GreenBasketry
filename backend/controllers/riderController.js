@@ -902,52 +902,6 @@ const getAvailableRiders = async (req, res) => {
   }
 };
 
-// Send success notification to customer (insert directly into notifications table)
-const sendSuccessNotification = async (req, res) => {
-  const { deliveryId } = req.params;
-  const { message, riderId } = req.body;
-  try {
-    // Find customerId and orderId for this delivery
-    const result = await client.query(
-      `SELECT c.customer_id, d.order_id FROM deliveries d
-       JOIN orders o ON d.order_id = o.order_id
-       JOIN carts c ON o.cart_id = c.cart_id
-       WHERE d.delivery_id = $1`,
-      [deliveryId]
-    );
-    if (result.rows.length > 0) {
-      const { customer_id, order_id } = result.rows[0];
-
-      // Insert into arrival_notifications
-      await client.query(
-        `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read, created_at)
-         VALUES ($1, $2, $3, false, NOW())`,
-        [deliveryId, riderId, message || 'Your order was delivered successfully!']
-      );
-
-      // Update delivery and order status
-      await client.query(
-        `UPDATE deliveries SET delivery_status = 'delivered' WHERE delivery_id = $1`,
-        [deliveryId]
-      );
-      await client.query(
-        `UPDATE orders SET order_status = 'delivered' WHERE order_id = $1`,
-        [order_id]
-      );
-
-      // Insert into notifications
-      await client.query(
-        `INSERT INTO arrival_notifications (delivery_id,rider_id, message, is_read, created_at)
-         VALUES ($1, $2, $3, false, NOW())`,
-        [customer_id, deliveryId, message || 'Your order was delivered successfully! Thank you for shopping with us.']
-      );
-    }
-    res.status(200).json({ message: 'Success notification sent and statuses updated.' });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to send notification and update status.' });
-  }
-};
-
 export {
   riderLogin,
   updateRiderLocation,
@@ -970,6 +924,5 @@ export {
   getAvailableRiders,
   updateOrderStatus,
   updateDeliveryAndOrderStatus,
-  sendSuccessNotification,
   handleOrderCancellation // <-- export
 };
