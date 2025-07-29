@@ -20,10 +20,18 @@ import {
   getRiderNotifications,
   markNotificationAsRead,
   getAvailableRiders,
+  getAllActiveRiders,
+  deleteRider,
+  updateRider,
   handleOrderCancellation
 } from '../controllers/riderController.js';
 
 const router = express.Router();
+
+// Admin Rider Management Routes (place these FIRST to avoid conflicts)
+router.get('/admin/riders', verifyToken, getAllActiveRiders);
+router.delete('/admin/:id', verifyToken, deleteRider);
+router.put('/admin/:id/update', verifyToken, updateRider);
 
 // Rider Authentication (no token required)
 router.post('/login', riderLogin);

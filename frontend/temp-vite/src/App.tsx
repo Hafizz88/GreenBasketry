@@ -39,6 +39,7 @@ import AdminActivityLogs from "./pages/AdminActivityLogs";
 import RiderStats from './pages/RiderStats';
 import { isAuthenticated } from './utils/auth';
 import EditProduct from "./pages/EditProduct";
+import SalesReport from "./pages/SalesReport";
 
 const queryClient = new QueryClient();
 
@@ -228,6 +229,7 @@ const App = () => {
               <Route path="products" element={<ManageProducts />} />
               <Route path="add-product" element={<AddProduct />} />
               <Route path="products/:id/edit" element={<EditProduct />} />
+              <Route path="sales-report" element={<SalesReport />} />
               <Route path="coupons" element={<ManageCoupons />} />
               <Route path="set-discount" element={<SetDiscount />} />
               <Route path="complaints" element={<ComplaintsAdminPage />} />

@@ -67,14 +67,6 @@ const OrderSuccessPage = () => {
                   </div>
                 </div>
               )}
-              
-              <div>
-                <p className="text-sm text-muted-foreground">Estimated Delivery</p>
-                <div className="flex items-center space-x-2">
-                  <Clock className="h-4 w-4 text-primary" />
-                  <p className="font-semibold">45 minutes</p>
-                </div>
-              </div>
             </CardContent>
           </Card>
         )}

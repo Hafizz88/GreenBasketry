@@ -304,20 +304,6 @@ const OrderStatusPage = () => {
                 </div>
               )}
 
-              {/* Estimated Delivery Time */}
-              {order.estimated_time && (
-                <div className="flex items-center gap-3 p-4 bg-green-50 rounded-lg">
-                  <Calendar className="h-5 w-5 text-green-600" />
-                  <div>
-                    <p className="font-medium text-green-900">Estimated Delivery</p>
-                    <p className="text-sm text-green-700">
-                      {formatDate(order.estimated_time)}
-                    </p>
-                  </div>
-                </div>
-              )}
-
-
             </CardContent>
           </Card>
 
@@ -392,7 +378,7 @@ const OrderStatusPage = () => {
               </div>
 
               {/* Points Information */}
-              {(order.points_used > 0 || order.points_earned > 0) && (
+              {(order.points_used > 0 || (order.points_earned > 0 && order.delivery_status !== 'failed')) && (
                 <div className="p-3 bg-yellow-50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <Star className="h-4 w-4 text-yellow-600" />
@@ -401,7 +387,7 @@ const OrderStatusPage = () => {
                   {order.points_used > 0 && (
                     <p className="text-sm text-yellow-700">Used: {order.points_used} points</p>
                   )}
-                  {order.points_earned > 0 && (
+                  {order.points_earned > 0 && order.delivery_status !== 'failed' && (
                     <p className="text-sm text-yellow-700">Earned: {order.points_earned} points</p>
                   )}
                 </div>

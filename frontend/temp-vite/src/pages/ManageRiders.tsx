@@ -79,7 +79,7 @@ const ManageRiders: React.FC = () => {
   const fetchRiders = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5001/api/rider/available', {
+      const response = await fetch('http://localhost:5001/api/rider/admin/riders', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ const ManageRiders: React.FC = () => {
     try {
       const token = localStorage.getItem('token');
       const url = editingRider 
-        ? `http://localhost:5001/api/rider/${editingRider.rider_id}/update`
+        ? `http://localhost:5001/api/rider/admin/${editingRider.rider_id}/update`
         : 'http://localhost:5001/api/auth/signup';
       
       const body = editingRider 
@@ -196,13 +196,13 @@ const ManageRiders: React.FC = () => {
   };
 
   const handleDeleteRider = async (riderId: number) => {
-    if (!window.confirm('Are you sure you want to delete this rider?')) {
+    if (!window.confirm('Are you sure you want to deactivate this rider?')) {
       return;
     }
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5001/api/rider/${riderId}`, {
+      const response = await fetch(`http://localhost:5001/api/rider/admin/${riderId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -211,14 +211,15 @@ const ManageRiders: React.FC = () => {
       });
 
       if (response.ok) {
-        showSnackbar('Rider deleted successfully!', 'success');
-        fetchRiders();
+        showSnackbar('Rider deactivated successfully!', 'success');
+        // Remove the rider from the local state instead of refetching
+        setRiders(prevRiders => prevRiders.filter(rider => rider.rider_id !== riderId));
       } else {
-        throw new Error('Failed to delete rider');
+        throw new Error('Failed to deactivate rider');
       }
     } catch (error) {
-      console.error('Error deleting rider:', error);
-      showSnackbar('Failed to delete rider', 'error');
+      console.error('Error deactivating rider:', error);
+      showSnackbar('Failed to deactivate rider', 'error');
     }
   };
 

@@ -176,12 +176,12 @@ const ManageAdmins: React.FC = () => {
   };
 
   const handleDeleteAdmin = async (adminId: number) => {
-    if (!window.confirm('Are you sure you want to delete this admin?')) {
+    if (!window.confirm('Are you sure you want to deactivate this admin?')) {
       return;
     }
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch(`http://localhost:5001/api/admin/${adminId}`, {
+      const response = await fetch(`http://localhost:5001/api/admin/admins/${adminId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -189,14 +189,15 @@ const ManageAdmins: React.FC = () => {
         }
       });
       if (response.ok) {
-        showSnackbar('Admin deleted successfully!', 'success');
-        fetchAdmins();
+        showSnackbar('Admin deactivated successfully!', 'success');
+        // Remove the admin from the local state instead of refetching
+        setAdmins(prevAdmins => prevAdmins.filter(admin => admin.admin_id !== adminId));
       } else {
-        throw new Error('Failed to delete admin');
+        throw new Error('Failed to deactivate admin');
       }
     } catch (error) {
-      console.error('Error deleting admin:', error);
-      showSnackbar('Failed to delete admin', 'error');
+      console.error('Error deactivating admin:', error);
+      showSnackbar('Failed to deactivate admin', 'error');
     }
   };
 
@@ -254,13 +255,15 @@ const ManageAdmins: React.FC = () => {
                         >
                           <EditIcon />
                         </IconButton>
-                        <IconButton
-                          size="small"
-                          onClick={() => handleDeleteAdmin(admin.admin_id)}
-                          color="error"
-                        >
-                          <DeleteIcon />
-                        </IconButton>
+                        {admin.admin_id !== Number(localStorage.getItem('userId')) && (
+                          <IconButton
+                            size="small"
+                            onClick={() => handleDeleteAdmin(admin.admin_id)}
+                            color="error"
+                          >
+                            <DeleteIcon />
+                          </IconButton>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>

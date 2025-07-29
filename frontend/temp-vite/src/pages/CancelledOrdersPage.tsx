@@ -11,10 +11,17 @@ interface CancelledOrder {
   order_date: string;
   total_amount: number;
   points_used: number;
-  points_earned: number;
+  points_value: number;
+  order_status: string;
+  delivery_id: number;
   delivery_status: string;
   customer_name: string;
   customer_phone: string;
+  address_line: string;
+  thana_name: string;
+  zone_name: string;
+  rider_name: string;
+  rider_phone: string;
 }
 
 const CancelledOrdersPage = () => {
@@ -35,7 +42,7 @@ const CancelledOrdersPage = () => {
   const fetchCancelledOrders = async () => {
     try {
       const response = await axios.get(
-        'http://localhost:5001/api/orders/admin/cancelled-needing-restoration',
+        'http://localhost:5001/api/admin/cancelled-orders',
         getAuthHeader()
       );
       setOrders(response.data);
@@ -62,22 +69,22 @@ const CancelledOrdersPage = () => {
 
     setRestoringStock(orderId);
     try {
-      const response = await axios.post(
-        `http://localhost:5001/api/orders/${orderId}/restore-stock`,
+      const response = await axios.put(
+        `http://localhost:5001/api/admin/cancelled-orders/${orderId}/restore`,
         {},
         getAuthHeader()
       );
 
       toast({
-        title: "Stock Restored",
+        title: "Order Restored",
         description: response.data.message,
       });
 
-      // Refresh orders list
-      await fetchCancelledOrders();
+      // Remove the order from the list since it's now restored
+      setOrders(prevOrders => prevOrders.filter(order => order.order_id !== orderId));
     } catch (error: any) {
-      console.error('Error restoring stock:', error);
-      const errorMessage = error.response?.data?.error || 'Failed to restore stock';
+      console.error('Error restoring order:', error);
+      const errorMessage = error.response?.data?.error || 'Failed to restore order';
       toast({
         title: "Restoration Failed",
         description: errorMessage,
@@ -117,7 +124,7 @@ const CancelledOrdersPage = () => {
         <div>
           <h2 className="text-3xl font-bold">Cancelled Orders</h2>
           <p className="text-muted-foreground">
-            Manage cancelled orders that need manual stock restoration (orders that were assigned to riders)
+            Manage cancelled orders from riders. Restore stock and mark orders as restored after rider returns.
           </p>
         </div>
         <Button onClick={fetchCancelledOrders} variant="outline">
@@ -164,19 +171,24 @@ const CancelledOrdersPage = () => {
                 </div>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                   <div>
                     <p className="text-sm text-muted-foreground mb-1">Customer</p>
                     <p className="font-medium">{order.customer_name}</p>
                     <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
                   </div>
                   <div>
+                    <p className="text-sm text-muted-foreground mb-1">Rider</p>
+                    <p className="font-medium">{order.rider_name || 'Unassigned'}</p>
+                    <p className="text-sm text-muted-foreground">{order.rider_phone || 'N/A'}</p>
+                  </div>
+                  <div>
                     <p className="text-sm text-muted-foreground mb-1">Points Used</p>
                     <p className="font-medium text-red-600">-{order.points_used} points</p>
                   </div>
                   <div>
-                    <p className="text-sm text-muted-foreground mb-1">Points Earned</p>
-                    <p className="font-medium text-green-600">+{order.points_earned} points</p>
+                    <p className="text-sm text-muted-foreground mb-1">Points Value</p>
+                    <p className="font-medium text-green-600">৳{order.points_value}</p>
                   </div>
                 </div>
 

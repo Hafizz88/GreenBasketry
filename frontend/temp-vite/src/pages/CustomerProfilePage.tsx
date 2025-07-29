@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
-import { User, MapPin, Heart, Plus, X, ArrowLeft, Trash2 } from 'lucide-react';
+import { User, MapPin, Heart, Plus, X, ArrowLeft, Trash2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -46,11 +46,19 @@ const CustomerProfilePage = () => {
   const [thanas, setThanas] = useState<Thana[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddAddressForm, setShowAddAddressForm] = useState(false);
+  const [showChangePasswordForm, setShowChangePasswordForm] = useState(false);
   const [newAddress, setNewAddress] = useState({
     address_line: '',
     thana_name: '',
     postal_code: ''
   });
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordErrors, setPasswordErrors] = useState<{[key: string]: string}>({});
+  const [changingPassword, setChangingPassword] = useState(false);
 
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -69,6 +77,96 @@ const CustomerProfilePage = () => {
   };
 
   const customerId = localStorage.getItem('userId');
+
+  // Password validation
+  const validatePasswordChange = () => {
+    const errors: {[key: string]: string} = {};
+
+    if (!passwordData.currentPassword) {
+      errors.currentPassword = 'Current password is required';
+    }
+
+    if (!passwordData.newPassword) {
+      errors.newPassword = 'New password is required';
+    } else if (passwordData.newPassword.length < 8) {
+      errors.newPassword = 'New password must be at least 8 characters long';
+    }
+
+    if (!passwordData.confirmPassword) {
+      errors.confirmPassword = 'Please confirm your new password';
+    } else if (passwordData.newPassword !== passwordData.confirmPassword) {
+      errors.confirmPassword = 'Passwords do not match';
+    }
+
+    if (passwordData.currentPassword === passwordData.newPassword) {
+      errors.newPassword = 'New password must be different from current password';
+    }
+
+    setPasswordErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handlePasswordChange = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validatePasswordChange()) {
+      return;
+    }
+
+    setChangingPassword(true);
+    try {
+      const authHeader = getAuthHeader();
+      if (!authHeader) {
+        toast({
+          title: "Authentication Failed",
+          description: "Please log in again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const response = await axios.put(
+        `http://localhost:5001/api/customers/${customerId}/change-password`,
+        {
+          currentPassword: passwordData.currentPassword,
+          newPassword: passwordData.newPassword
+        },
+        authHeader
+      );
+
+      toast({
+        title: "Password Changed",
+        description: "Your password has been updated successfully.",
+      });
+
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      setShowChangePasswordForm(false);
+      setPasswordErrors({});
+
+    } catch (err: any) {
+      console.error('Failed to change password', err);
+      const errorMessage = err.response?.data?.error || "Failed to change password. Please try again.";
+      toast({
+        title: "Error",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    } finally {
+      setChangingPassword(false);
+    }
+  };
+
+  const handlePasswordInputChange = (field: string, value: string) => {
+    setPasswordData(prev => ({ ...prev, [field]: value }));
+    // Clear error when user starts typing
+    if (passwordErrors[field]) {
+      setPasswordErrors(prev => ({ ...prev, [field]: '' }));
+    }
+  };
 
   useEffect(() => {
     if (!customerId) {
@@ -310,6 +408,88 @@ const CustomerProfilePage = () => {
                     {customer.points_used} pts
                   </Badge>
                 </div>
+              </div>
+              <div className="pt-4">
+                <Dialog open={showChangePasswordForm} onOpenChange={setShowChangePasswordForm}>
+                  <DialogTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Lock className="h-4 w-4 mr-2" />
+                      Change Password
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Change Password</DialogTitle>
+                    </DialogHeader>
+                    <form onSubmit={handlePasswordChange} className="space-y-4">
+                      <div>
+                        <Label htmlFor="currentPassword">Current Password</Label>
+                        <Input
+                          id="currentPassword"
+                          type="password"
+                          value={passwordData.currentPassword}
+                          onChange={(e) => handlePasswordInputChange('currentPassword', e.target.value)}
+                          className={passwordErrors.currentPassword ? 'border-red-500' : ''}
+                          placeholder="Enter your current password"
+                        />
+                        {passwordErrors.currentPassword && (
+                          <p className="text-red-500 text-sm mt-1">{passwordErrors.currentPassword}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="newPassword">New Password</Label>
+                        <Input
+                          id="newPassword"
+                          type="password"
+                          value={passwordData.newPassword}
+                          onChange={(e) => handlePasswordInputChange('newPassword', e.target.value)}
+                          className={passwordErrors.newPassword ? 'border-red-500' : ''}
+                          placeholder="Minimum 8 characters"
+                        />
+                        {passwordErrors.newPassword && (
+                          <p className="text-red-500 text-sm mt-1">{passwordErrors.newPassword}</p>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="confirmPassword">Confirm New Password</Label>
+                        <Input
+                          id="confirmPassword"
+                          type="password"
+                          value={passwordData.confirmPassword}
+                          onChange={(e) => handlePasswordInputChange('confirmPassword', e.target.value)}
+                          className={passwordErrors.confirmPassword ? 'border-red-500' : ''}
+                          placeholder="Confirm your new password"
+                        />
+                        {passwordErrors.confirmPassword && (
+                          <p className="text-red-500 text-sm mt-1">{passwordErrors.confirmPassword}</p>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2 pt-4">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => {
+                            setShowChangePasswordForm(false);
+                            setPasswordData({
+                              currentPassword: '',
+                              newPassword: '',
+                              confirmPassword: ''
+                            });
+                            setPasswordErrors({});
+                          }}
+                        >
+                          Cancel
+                        </Button>
+                        <Button type="submit" disabled={changingPassword}>
+                          {changingPassword ? 'Changing Password...' : 'Change Password'}
+                        </Button>
+                      </div>
+                    </form>
+                  </DialogContent>
+                </Dialog>
               </div>
             </CardContent>
           </Card>

@@ -12,6 +12,7 @@ interface Product {
   image_url?: string;
   discount_percentage?: number;
   vat_percentage?: number;
+  points_rewarded?: number;
 }
 
 const getAuthHeader = () => {
@@ -181,6 +182,9 @@ const ManageProducts: React.FC = () => {
                     </p>
                     <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#666' }}>
                       Stock: {prod.stock}
+                    </p>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#4caf50' }}>
+                      🎁 {prod.points_rewarded || 0} points
                     </p>
                   </div>
                   

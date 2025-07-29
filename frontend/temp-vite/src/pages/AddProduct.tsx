@@ -12,6 +12,7 @@ interface ProductForm {
   vat_percentage: string;
   discount_started: string;
   discount_finished: string;
+  points_rewarded: string;
 }
 
 // Using the utility function from auth.ts instead of local getAuthHeader
@@ -27,6 +28,7 @@ const AddProduct: React.FC = () => {
     vat_percentage: '',
     discount_started: '',
     discount_finished: '',
+    points_rewarded: '',
   });
   const [selectedImage, setSelectedImage] = useState<File | null>(null);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
@@ -88,6 +90,7 @@ const AddProduct: React.FC = () => {
       formData.append('vat_percentage', form.vat_percentage);
       formData.append('discount_started', form.discount_started);
       formData.append('discount_finished', form.discount_finished);
+      formData.append('points_rewarded', form.points_rewarded);
       formData.append('image', selectedImage);
 
       await axios.post(
@@ -107,6 +110,7 @@ const AddProduct: React.FC = () => {
         vat_percentage: '',
         discount_started: '',
         discount_finished: '',
+        points_rewarded: '',
       });
       setSelectedImage(null);
       setImagePreview(null);
@@ -249,6 +253,21 @@ const AddProduct: React.FC = () => {
               style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
             />
           </div>
+        </div>
+
+        <div>
+          <label style={{ display: 'block', marginBottom: 8, fontWeight: 600 }}>Points Rewarded</label>
+          <input 
+            name="points_rewarded" 
+            type="number" 
+            placeholder="0" 
+            value={form.points_rewarded} 
+            onChange={handleChange} 
+            style={{ width: '100%', padding: 12, borderRadius: 8, border: '1px solid #ddd' }}
+          />
+          <p style={{ fontSize: 12, color: '#666', marginTop: 4 }}>
+            Number of points customers will earn when purchasing this product
+          </p>
         </div>
 
         <div>

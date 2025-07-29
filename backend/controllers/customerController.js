@@ -1,4 +1,60 @@
 import { client } from "../db.js";
+import { hashPassword, comparePassword } from "../utils/hash.js";
+
+// Change customer password
+export const changePassword = async (req, res) => {
+  const { customer_id } = req.params;
+  const { currentPassword, newPassword } = req.body;
+  
+  console.log('Changing password for customer ID:', customer_id);
+  
+  if (!currentPassword || !newPassword) {
+    return res.status(400).json({ error: 'Current password and new password are required' });
+  }
+  
+  if (newPassword.length < 8) {
+    return res.status(400).json({ error: 'New password must be at least 8 characters long' });
+  }
+  
+  try {
+    // First, get the current customer to verify current password
+    const customerResult = await client.query(
+      `SELECT password_hash FROM customers WHERE customer_id = $1`,
+      [customer_id]
+    );
+    
+    if (customerResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+    
+    const customer = customerResult.rows[0];
+    
+    // Verify current password
+    const isCurrentPasswordValid = await comparePassword(currentPassword, customer.password_hash);
+    if (!isCurrentPasswordValid) {
+      return res.status(401).json({ error: 'Current password is incorrect' });
+    }
+    
+    // Hash the new password
+    const hashedNewPassword = await hashPassword(newPassword);
+    
+    // Update the password in database
+    await client.query(
+      `UPDATE customers SET password_hash = $1 WHERE customer_id = $2`,
+      [hashedNewPassword, customer_id]
+    );
+    
+    console.log('Password changed successfully for customer ID:', customer_id);
+    
+    res.status(200).json({ 
+      message: 'Password changed successfully' 
+    });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ error: 'Server error while changing password' });
+  }
+};
+
 // 📌 Utility function to add a customer 
 // In customerController.js - Add better error handling
 export const getCustomerById = async (req, res) => {

@@ -182,7 +182,7 @@ const getProductDetails = async (req, res) => {
   try {
     // Fetch product info
     const productRes = await client.query(
-      `SELECT product_id, name, category, price, stock, description, image_url, discount_percentage, vat_percentage, created_at, last_updated
+      `SELECT product_id, name, category, price, stock, description, image_url, discount_percentage, vat_percentage, points_rewarded, created_at, last_updated
        FROM products WHERE product_id = $1`,
       [id]
     );

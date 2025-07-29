@@ -421,7 +421,7 @@ const confirmPaymentReceived = async (req, res) => {
   }
 };
 
-// Handle order cancellation notification for riders
+// Handle order cancellation from rider's side
 const handleOrderCancellation = async (req, res) => {
   const { deliveryId } = req.params;
   const { riderId } = req.body;
@@ -431,9 +431,12 @@ const handleOrderCancellation = async (req, res) => {
 
     // Check if delivery exists and is assigned to this rider
     const deliveryCheck = await client.query(
-      `SELECT d.*, da.rider_id 
+      `SELECT d.*, da.rider_id, o.order_id, o.points_used, o.points_value, c.customer_id
        FROM deliveries d
        LEFT JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
+       JOIN orders o ON d.order_id = o.order_id
+       JOIN carts cart ON o.cart_id = cart.cart_id
+       JOIN customers c ON cart.customer_id = c.customer_id
        WHERE d.delivery_id = $1 AND da.rider_id = $2`,
       [deliveryId, riderId]
     );
@@ -451,18 +454,67 @@ const handleOrderCancellation = async (req, res) => {
       [deliveryId]
     );
 
+    // Update order status to cancelled
+    await client.query(
+      `UPDATE orders SET order_status = 'cancelled' WHERE order_id = $1`,
+      [delivery.order_id]
+    );
+
+    // Refund points to customer if points were used
+    console.log(`🔍 Order ${delivery.order_id} - Points used: ${delivery.points_used}, Points value: ${delivery.points_value}`);
+    
+    if (delivery.points_used && delivery.points_used > 0) {
+      await client.query(
+        `UPDATE customers SET points_used = points_used - $1 WHERE customer_id = $2`,
+        [delivery.points_used, delivery.customer_id]
+      );
+      console.log(`💰 Refunded ${delivery.points_used} points to customer ${delivery.customer_id}`);
+    }
+
+    // Also refund any points that were earned but not yet credited
+    // Get the points that would have been earned for this order
+    const pointsEarnedQuery = await client.query(`
+      SELECT COALESCE(SUM(ci.quantity * p.points_rewarded), 0) as points_earned
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.product_id
+      JOIN orders o ON ci.cart_id = o.cart_id
+      WHERE o.order_id = $1
+    `, [delivery.order_id]);
+
+    const pointsEarned = pointsEarnedQuery.rows[0].points_earned;
+    console.log(`🔍 Points that would have been earned for order ${delivery.order_id}: ${pointsEarned}`);
+    
+    if (pointsEarned > 0) {
+      // Since the order is cancelled, we need to reverse any points that were already earned
+      await client.query(
+        `UPDATE customers SET points_earned = points_earned - $1 WHERE customer_id = $2`,
+        [pointsEarned, delivery.customer_id]
+      );
+      console.log(`💰 Reversed ${pointsEarned} earned points for customer ${delivery.customer_id}`);
+    }
+
+    // Debug: Check current customer points after refund
+    const customerPointsQuery = await client.query(
+      `SELECT points_earned, points_used FROM customers WHERE customer_id = $1`,
+      [delivery.customer_id]
+    );
+    if (customerPointsQuery.rows.length > 0) {
+      const customer = customerPointsQuery.rows[0];
+      console.log(`📊 Customer ${delivery.customer_id} points after refund - Earned: ${customer.points_earned}, Used: ${customer.points_used}`);
+    }
+
     // Create notification for rider about cancellation
     await client.query(
       `INSERT INTO arrival_notifications (delivery_id, rider_id, message, is_read, created_at)
        VALUES ($1, $2, $3, false, NOW())`,
-      [deliveryId, riderId, 'Order cancelled by customer. Please return to base.']
+      [deliveryId, riderId, 'Order cancelled. Please return to base.']
     );
 
     // Emit real-time notification to rider
     if (io) {
       io.to(`rider_${riderId}`).emit('orderCancelled', {
         deliveryId,
-        message: 'Order cancelled by customer. Please return to base.'
+        message: 'Order cancelled. Please return to base.'
       });
     }
 
@@ -470,8 +522,13 @@ const handleOrderCancellation = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Order cancellation processed. Rider notified.'
+      message: 'Order cancelled successfully. Points refunded to customer.',
+      points_used_refunded: delivery.points_used || 0,
+      points_earned_reversed: pointsEarned || 0,
+      total_points_affected: (delivery.points_used || 0) + (pointsEarned || 0)
     });
+
+    console.log(`❌ Order ${delivery.order_id} cancelled by rider ${riderId}. Points used refunded: ${delivery.points_used || 0}, Points earned reversed: ${pointsEarned || 0}`);
 
   } catch (error) {
     await client.query('ROLLBACK');
@@ -890,7 +947,7 @@ const getAvailableRiders = async (req, res) => {
         vehicle_info,
         available
       FROM riders 
-      WHERE available = true
+      WHERE available = true AND is_active = true
       ORDER BY name`,
       []
     );
@@ -899,6 +956,80 @@ const getAvailableRiders = async (req, res) => {
   } catch (error) {
     console.error('Error fetching available riders:', error);
     res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Get all active riders for admin management
+const getAllActiveRiders = async (req, res) => {
+  try {
+    const ridersQuery = await client.query(
+      `SELECT 
+        rider_id,
+        name,
+        phone,
+        email,
+        vehicle_info,
+        available
+      FROM riders 
+      WHERE is_active = true
+      ORDER BY name`,
+      []
+    );
+    
+    res.status(200).json(ridersQuery.rows);
+  } catch (error) {
+    console.error('Error fetching active riders:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+// Soft delete a rider
+const deleteRider = async (req, res) => {
+  const { id } = req.params;
+  console.log('deleteRider called with id:', id);
+  
+  try {
+    const result = await client.query(
+      'UPDATE riders SET is_active = false WHERE rider_id = $1 AND is_active = true RETURNING *',
+      [id]
+    );
+    
+    console.log('Update result:', result.rows);
+    
+    if (result.rows.length === 0) {
+      console.log('No rider found or already inactive');
+      return res.status(404).json({ error: 'Rider not found or already inactive' });
+    }
+    
+    console.log('Rider deactivated successfully:', result.rows[0]);
+    res.json({ message: 'Rider deactivated successfully', rider: result.rows[0] });
+  } catch (err) {
+    console.error('Error soft deleting rider:', err);
+    res.status(500).json({ error: 'Failed to deactivate rider' });
+  }
+};
+
+// Update rider details
+const updateRider = async (req, res) => {
+  const { id } = req.params;
+  const { name, email, phone, vehicle_info } = req.body;
+  
+  try {
+    const result = await client.query(
+      `UPDATE riders 
+       SET name = $1, email = $2, phone = $3, vehicle_info = $4
+       WHERE rider_id = $5 AND is_active = true RETURNING *`,
+      [name, email, phone, vehicle_info, id]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Rider not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error updating rider:', err);
+    res.status(500).json({ error: 'Failed to update rider' });
   }
 };
 
@@ -922,7 +1053,10 @@ export {
   getRiderNotifications,
   markNotificationAsRead,
   getAvailableRiders,
+  getAllActiveRiders,
+  deleteRider,
+  updateRider,
   updateOrderStatus,
   updateDeliveryAndOrderStatus,
-  handleOrderCancellation // <-- export
+  handleOrderCancellation
 };

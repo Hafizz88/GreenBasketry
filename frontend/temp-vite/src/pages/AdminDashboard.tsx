@@ -41,7 +41,8 @@ import {
   Report as ComplaintsIcon,
   Assessment as AssessmentIcon,
   History as HistoryIcon,
-  Logout as LogoutIcon
+  Logout as LogoutIcon,
+  BarChart as SalesReportIcon
 } from '@mui/icons-material';
 import ComplaintsAdminPage from './ComplaintsAdminPage';
 import { logout, getCurrentUser } from '../utils/auth';
@@ -70,6 +71,7 @@ const navLinks: NavLink[] = [
   { to: 'add-product', label: 'Add New Product', icon: <AddIcon /> },
   { to: 'coupons', label: 'Manage Coupons', icon: <CouponsIcon /> },
   { to: 'set-discount', label: 'Set Product Discount', icon: <DiscountIcon /> },
+  { to: 'sales-report', label: 'Sales Report', icon: <SalesReportIcon /> },
   { to: 'complaints', label: 'Manage Complaints', icon: <ComplaintsIcon /> },
   { to: 'cancelled-orders', label: 'Cancelled Orders', icon: <OrdersIcon /> },
   { to: 'manage-riders', label: 'Manage Riders', icon: <PeopleIcon /> },

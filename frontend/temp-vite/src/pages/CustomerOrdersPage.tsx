@@ -260,7 +260,7 @@ const CustomerOrdersPage = () => {
                     </div>
                   </div>
                   
-                  {(order.points_used > 0 || order.points_earned > 0) && (
+                  {(order.points_used > 0 || (order.points_earned > 0 && order.delivery_status !== 'failed')) && (
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       {order.points_used > 0 && (
                         <div>
@@ -268,7 +268,7 @@ const CustomerOrdersPage = () => {
                           <p className="font-medium text-red-600">-{order.points_used} points</p>
                         </div>
                       )}
-                      {order.points_earned > 0 && (
+                      {order.points_earned > 0 && order.delivery_status !== 'failed' && (
                         <div>
                           <p className="text-sm text-muted-foreground mb-1">Points Earned</p>
                           <p className="font-medium text-green-600">+{order.points_earned} points</p>

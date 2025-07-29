@@ -13,11 +13,15 @@ import {
   setProductDiscount,
   runDiscountExpiry,
   getAllAdmins,
+  deleteAdmin,
   getRiderStats,
   getAllRidersWithStats,
   getAdminActivityLogs,
   getAdminActivitySummary,
-  getDashboardStats
+  getDashboardStats,
+  getSalesReport,
+  getCancelledOrders,
+  restoreCancelledOrder
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifyToken.js';
 import { upload } from '../controllers/cloudinaryController.js';
@@ -48,6 +52,7 @@ router.put('/coupons/:id', verifyToken, updateCoupon);
 router.patch('/complaints/:id/resolve', verifyToken, resolveComplaint);
 router.post('/run-discount-expiry', verifyToken, runDiscountExpiry);
 router.get('/admins', verifyToken, getAllAdmins);
+router.delete('/admins/:id', verifyToken, deleteAdmin);
 
 // Rider statistics routes
 router.get('/rider-stats/:riderId', verifyToken, getRiderStats);
@@ -59,5 +64,12 @@ router.get('/activity-summary', verifyToken, getAdminActivitySummary);
 
 // Dashboard statistics route
 router.get('/dashboard-stats', verifyToken, getDashboardStats);
+
+// Sales report route
+router.get('/sales-report', verifyToken, getSalesReport);
+
+// Cancelled orders management routes
+router.get('/cancelled-orders', verifyToken, getCancelledOrders);
+router.put('/cancelled-orders/:orderId/restore', verifyToken, restoreCancelledOrder);
 
 export default router;

@@ -4,7 +4,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 // Add a new product
 export const addProduct = async (req, res) => {
-  const { name, category, price, stock, description, discount_percentage, vat_percentage, discount_started, discount_finished } = req.body;
+  const { name, category, price, stock, description, discount_percentage, vat_percentage, discount_started, discount_finished, points_rewarded } = req.body;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   let imageUrl = null;
 
@@ -38,9 +38,9 @@ export const addProduct = async (req, res) => {
     }
 
     const result = await client.query(
-      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id, discount_started, discount_finished)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11) RETURNING *`,
-      [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id, discount_started, discount_finished]
+      `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id, discount_started, discount_finished, points_rewarded)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
+      [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id, discount_started, discount_finished, points_rewarded]
     );
     res.status(201).json(result.rows[0]);
   } catch (err) {
@@ -103,41 +103,22 @@ export const getAllProducts = async (req, res) => {
   }
 };
 
-// Delete a product
+// Soft delete a product by setting stock to 0
 export const deleteProduct = async (req, res) => {
   const { id } = req.params;
   try {
-    // 1. Get the product's image_url
-    const productRes = await client.query('SELECT image_url FROM products WHERE product_id = $1', [id]);
-    const imageUrl = productRes.rows[0]?.image_url;
-
-    // 2. Delete related records
-    await client.query('DELETE FROM cart_items WHERE product_id = $1', [id]);
-    await client.query('DELETE FROM buy_history WHERE product_id = $1', [id]);
-    await client.query('DELETE FROM wishlist WHERE product_id = $1', [id]);
-
-    // 3. Delete the product
-    await client.query('DELETE FROM products WHERE product_id = $1', [id]);
-
-    // 4. Delete image from Cloudinary if exists
-    if (imageUrl) {
-      // Extract public_id from imageUrl
-      // Example: https://res.cloudinary.com/<cloud_name>/image/upload/v1234567890/ecommerce/category/filename.jpg
-      const match = imageUrl.match(/\/upload\/(?:v\d+\/)?(.+)\.[a-zA-Z]+$/);
-      const publicId = match ? match[1] : null;
-      if (publicId) {
-        try {
-          await cloudinary.uploader.destroy(publicId);
-        } catch (cloudErr) {
-          console.error('Cloudinary image deletion error:', cloudErr);
-        }
-      }
+    // Set stock to 0 instead of deleting
+    const result = await client.query(
+      'UPDATE products SET stock = 0 WHERE product_id = $1 RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
     }
-
-    res.json({ message: 'Product and related data deleted' });
+    res.json({ message: 'Product stock set to 0 (soft deleted)', product: result.rows[0] });
   } catch (err) {
-    console.error('Error deleting product:', err);
-    res.status(500).json({ error: 'Failed to delete product and related data' });
+    console.error('Error soft deleting product:', err);
+    res.status(500).json({ error: 'Failed to soft delete product' });
   }
 };
 
@@ -283,13 +264,56 @@ export const runDiscountExpiry = async (req, res) => {
   }
 };
 
-// Get all admins
+// Get all active admins
 export const getAllAdmins = async (req, res) => {
   try {
-    const result = await client.query('SELECT admin_id, name, email, phone FROM admins');
+    const result = await client.query('SELECT admin_id, name, email, phone FROM admins WHERE is_active = true');
     res.json(result.rows);
   } catch (err) {
     res.status(500).json({ error: 'Failed to fetch admins' });
+  }
+};
+
+// Soft delete an admin (only allowed by superadmin, cannot delete self)
+export const deleteAdmin = async (req, res) => {
+  console.log('deleteAdmin called with:', req.params, 'by user:', req.user);
+  const { id } = req.params; // id of the admin to delete
+  const requesterId = req.user && req.user.id; // id of the admin making the request
+
+  try {
+    // 1. Check if the requester is a superadmin
+    console.log('Checking if requester is superadmin, requesterId:', requesterId);
+    const requesterRes = await client.query(
+      'SELECT is_superadmin FROM admins WHERE admin_id = $1 AND is_active = true',
+      [requesterId]
+    );
+    console.log('Requester query result:', requesterRes.rows);
+    if (!requesterRes.rows.length || !requesterRes.rows[0].is_superadmin) {
+      console.log('Access denied: requester is not superadmin');
+      return res.status(403).json({ error: 'Only superadmins can delete admins.' });
+    }
+
+    // 2. Prevent deleting yourself
+    if (parseInt(id) === requesterId) {
+      console.log('Access denied: cannot delete self');
+      return res.status(400).json({ error: 'You cannot delete your own account.' });
+    }
+
+    // 3. Soft delete the target admin (set is_active to false)
+    console.log('Soft deleting admin with ID:', id);
+    const result = await client.query(
+      'UPDATE admins SET is_active = false WHERE admin_id = $1 AND is_active = true RETURNING *',
+      [id]
+    );
+    if (result.rows.length === 0) {
+      console.log('Admin not found with ID:', id);
+      return res.status(404).json({ error: 'Admin not found or already inactive' });
+    }
+    console.log('Admin soft deleted successfully:', result.rows[0]);
+    res.json({ message: 'Admin deactivated successfully', admin: result.rows[0] });
+  } catch (err) {
+    console.error('Error soft deleting admin:', err);
+    res.status(500).json({ error: 'Failed to deactivate admin' });
   }
 };
 
@@ -684,5 +708,287 @@ export const getDashboardStats = async (req, res) => {
   } catch (err) {
     console.error('Error fetching dashboard stats:', err);
     res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+  }
+};
+
+// Get cancelled orders for admin review
+export const getCancelledOrders = async (req, res) => {
+  try {
+    const result = await client.query(`
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.total_amount,
+        o.points_used,
+        o.points_value,
+        o.order_status,
+        d.delivery_id,
+        d.delivery_status,
+        c.name as customer_name,
+        c.phone as customer_phone,
+        addr.address_line,
+        t.thana_name,
+        dz.zone_name,
+        r.name as rider_name,
+        r.phone as rider_phone
+      FROM orders o
+      JOIN deliveries d ON o.order_id = d.order_id
+      JOIN carts cart ON o.cart_id = cart.cart_id
+      JOIN customers c ON cart.customer_id = c.customer_id
+      JOIN addresses addr ON o.address_id = addr.address_id
+      LEFT JOIN "Thanas" t ON addr.thana_id = t.id
+      JOIN delivery_zones dz ON addr.zone_id = dz.zone_id
+      LEFT JOIN delivery_assignments da ON d.delivery_id = da.delivery_id
+      LEFT JOIN riders r ON da.rider_id = r.rider_id
+      WHERE o.order_status = 'cancelled'
+      ORDER BY o.order_date DESC
+    `);
+    
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching cancelled orders:', err);
+    res.status(500).json({ error: 'Failed to fetch cancelled orders' });
+  }
+};
+
+// Restore cancelled order (admin manually restores stock and marks as restored)
+export const restoreCancelledOrder = async (req, res) => {
+  const { orderId } = req.params;
+  const admin_id = req.user && req.user.id;
+  
+  if (!admin_id) {
+    return res.status(401).json({ error: 'Admin authentication required' });
+  }
+
+  try {
+    await client.query('BEGIN');
+
+    // Get order details and cart items
+    const orderResult = await client.query(`
+      SELECT o.order_id, o.points_used, c.customer_id
+      FROM orders o
+      JOIN carts c ON o.cart_id = c.cart_id
+      WHERE o.order_id = $1 AND o.order_status = 'cancelled'
+    `, [orderId]);
+
+    if (orderResult.rows.length === 0) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ error: 'Cancelled order not found' });
+    }
+
+    const order = orderResult.rows[0];
+
+    // Get cart items to restore stock
+    const cartItemsResult = await client.query(`
+      SELECT ci.product_id, ci.quantity, p.name as product_name
+      FROM cart_items ci
+      JOIN products p ON ci.product_id = p.product_id
+      JOIN orders o ON ci.cart_id = o.cart_id
+      WHERE o.order_id = $1
+    `, [orderId]);
+
+    // Restore stock for each product
+    for (const item of cartItemsResult.rows) {
+      await client.query(
+        `UPDATE products SET stock = stock + $1 WHERE product_id = $2`,
+        [item.quantity, item.product_id]
+      );
+      console.log(`📦 Restored ${item.quantity} units of ${item.product_name} (ID: ${item.product_id})`);
+    }
+
+    // Update order status to restored
+    await client.query(
+      `UPDATE orders SET order_status = 'restored' WHERE order_id = $1`,
+      [orderId]
+    );
+
+    // Update delivery status to failed (to indicate it was cancelled)
+    await client.query(
+      `UPDATE deliveries SET delivery_status = 'failed' WHERE order_id = $1`,
+      [orderId]
+    );
+
+    await client.query('COMMIT');
+
+    res.json({ 
+      message: 'Order restored successfully. Stock has been updated.',
+      order_id: orderId,
+      products_restored: cartItemsResult.rows.length,
+      stock_restored: cartItemsResult.rows.reduce((sum, item) => sum + item.quantity, 0)
+    });
+
+    console.log(`✅ Order ${orderId} restored by admin ${admin_id}. Stock restored for ${cartItemsResult.rows.length} products.`);
+
+  } catch (err) {
+    await client.query('ROLLBACK');
+    console.error('Error restoring cancelled order:', err);
+    res.status(500).json({ error: 'Failed to restore order' });
+  }
+};
+
+// Get sales report data for charts and analytics
+export const getSalesReport = async (req, res) => {
+  try {
+    const { period = 'month' } = req.query; // period can be 'week', 'month', 'year'
+    console.log('getSalesReport called with period:', period);
+    
+    let dateFilter = '';
+    let groupBy = '';
+    
+    switch (period) {
+      case 'week':
+        dateFilter = "AND o.order_date >= CURRENT_DATE - INTERVAL '7 days'";
+        groupBy = "DATE(o.order_date)";
+        break;
+      case 'month':
+        dateFilter = "AND o.order_date >= CURRENT_DATE - INTERVAL '30 days'";
+        groupBy = "DATE(o.order_date)";
+        break;
+      case 'year':
+        dateFilter = "AND o.order_date >= CURRENT_DATE - INTERVAL '365 days'";
+        groupBy = "DATE_TRUNC('month', o.order_date)";
+        break;
+      default:
+        dateFilter = "AND o.order_date >= CURRENT_DATE - INTERVAL '30 days'";
+        groupBy = "DATE(o.order_date)";
+    }
+
+    console.log('Using dateFilter:', dateFilter);
+    console.log('Using groupBy:', groupBy);
+
+    // Get daily/monthly sales data
+    const salesDataQuery = await client.query(`
+      SELECT 
+        ${groupBy} as date,
+        COUNT(o.order_id) as total_orders,
+        COALESCE(SUM(o.total_amount), 0) as total_revenue,
+        COALESCE(SUM(o.discount_amount), 0) as total_discounts,
+        COALESCE(SUM(o.delivery_fee), 0) as total_delivery_fees
+      FROM orders o
+      WHERE o.order_status = 'delivered' ${dateFilter}
+      GROUP BY ${groupBy}
+      ORDER BY date ASC
+    `);
+    console.log('Sales data query result:', salesDataQuery.rows);
+
+    // Get top selling products - FIXED QUERY
+    const topProductsQuery = await client.query(`
+      SELECT 
+        p.name,
+        p.product_id,
+        COUNT(ci.cart_item_id) as times_purchased,
+        COALESCE(SUM(ci.quantity * p.price), 0) as total_revenue
+      FROM products p
+      JOIN cart_items ci ON p.product_id = ci.product_id
+      JOIN carts c ON ci.cart_id = c.cart_id
+      JOIN orders o ON c.cart_id = o.cart_id
+      WHERE o.order_status = 'delivered' ${dateFilter}
+      GROUP BY p.product_id, p.name
+      ORDER BY times_purchased DESC
+      LIMIT 10
+    `);
+    console.log('Top products query result:', topProductsQuery.rows);
+
+    // Get sales by category
+    const categorySalesQuery = await client.query(`
+      SELECT 
+        p.category,
+        COUNT(DISTINCT o.order_id) as orders_count,
+        COALESCE(SUM(o.total_amount), 0) as category_revenue
+      FROM orders o
+      JOIN carts c ON o.cart_id = c.cart_id
+      JOIN cart_items ci ON c.cart_id = ci.cart_id
+      JOIN products p ON ci.product_id = p.product_id
+      WHERE o.order_status = 'delivered' ${dateFilter}
+      GROUP BY p.category
+      ORDER BY category_revenue DESC
+    `);
+    console.log('Category sales query result:', categorySalesQuery.rows);
+
+    // Get overall statistics
+    const overallStatsQuery = await client.query(`
+      SELECT 
+        COUNT(o.order_id) as total_orders,
+        COALESCE(SUM(o.total_amount), 0) as total_revenue,
+        COALESCE(AVG(o.total_amount), 0) as avg_order_value,
+        COUNT(DISTINCT c.customer_id) as unique_customers,
+        COALESCE(SUM(o.discount_amount), 0) as total_discounts,
+        COALESCE(SUM(o.delivery_fee), 0) as total_delivery_fees
+      FROM orders o
+      JOIN carts c ON o.cart_id = c.cart_id
+      WHERE o.order_status = 'delivered' ${dateFilter}
+    `);
+    console.log('Overall stats query result:', overallStatsQuery.rows);
+
+    // Get recent orders
+    const recentOrdersQuery = await client.query(`
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.total_amount,
+        o.order_status,
+        c.name as customer_name,
+        COUNT(ci.cart_item_id) as items_count
+      FROM orders o
+      JOIN carts cart ON o.cart_id = cart.cart_id
+      JOIN customers c ON cart.customer_id = c.customer_id
+      JOIN cart_items ci ON cart.cart_id = ci.cart_id
+      WHERE o.order_status = 'delivered' ${dateFilter}
+      GROUP BY o.order_id, o.order_date, o.total_amount, o.order_status, c.name
+      ORDER BY o.order_date DESC
+      LIMIT 10
+    `);
+    console.log('Recent orders query result:', recentOrdersQuery.rows);
+
+    // Convert string values to numbers for proper chart display
+    const processedSalesData = salesDataQuery.rows.map(row => ({
+      ...row,
+      total_orders: parseInt(row.total_orders),
+      total_revenue: parseFloat(row.total_revenue),
+      total_discounts: parseFloat(row.total_discounts),
+      total_delivery_fees: parseFloat(row.total_delivery_fees)
+    }));
+
+    const processedTopProducts = topProductsQuery.rows.map(row => ({
+      ...row,
+      times_purchased: parseInt(row.times_purchased),
+      total_revenue: parseFloat(row.total_revenue)
+    }));
+
+    const processedCategorySales = categorySalesQuery.rows.map(row => ({
+      ...row,
+      orders_count: parseInt(row.orders_count),
+      category_revenue: parseFloat(row.category_revenue)
+    }));
+
+    const processedOverallStats = {
+      total_orders: parseInt(overallStatsQuery.rows[0].total_orders),
+      total_revenue: parseFloat(overallStatsQuery.rows[0].total_revenue),
+      avg_order_value: parseFloat(overallStatsQuery.rows[0].avg_order_value),
+      unique_customers: parseInt(overallStatsQuery.rows[0].unique_customers),
+      total_discounts: parseFloat(overallStatsQuery.rows[0].total_discounts),
+      total_delivery_fees: parseFloat(overallStatsQuery.rows[0].total_delivery_fees)
+    };
+
+    const processedRecentOrders = recentOrdersQuery.rows.map(row => ({
+      ...row,
+      total_amount: parseFloat(row.total_amount),
+      items_count: parseInt(row.items_count)
+    }));
+
+    const result = {
+      period,
+      salesData: processedSalesData,
+      topProducts: processedTopProducts,
+      categorySales: processedCategorySales,
+      overallStats: processedOverallStats,
+      recentOrders: processedRecentOrders
+    };
+
+    console.log('Final sales report data being sent:', result);
+    res.json(result);
+  } catch (err) {
+    console.error('Error fetching sales report:', err);
+    res.status(500).json({ error: 'Failed to fetch sales report' });
   }
 };
