@@ -13,7 +13,7 @@ import {
   getCancelledOrdersNeedingStockRestoration,
   getCustomerCancellableOrders
 } from '../controllers/orderstatusController.js';
-import verifyToken from '../middleware/verifytoken.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
 

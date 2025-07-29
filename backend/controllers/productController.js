@@ -3,7 +3,7 @@ import { uploadImageToCloudinary } from '../controllers/cloudinaryController.js'
 
 // Create product with image upload to Cloudinary
 const createProduct = async (req, res) => {
-  const { name, description, price, quantity, categoryid } = req.body;
+  const { name, description, price, quantity, categoryid, category } = req.body;
   let imageUrl = null;
 
   try {
@@ -12,11 +12,14 @@ const createProduct = async (req, res) => {
       imageUrl = await uploadImageToCloudinary(req.file.buffer); // Handle image upload
     }
 
+    // Normalize category: trim whitespace
+    const normalizedCategory = category ? category.trim() : null;
+
     // Insert product into the database
     const result = await client.query(
-      `INSERT INTO products (name, description, price, quantity, categoryid, image_url) 
-      VALUES ($1, $2, $3, $4, $5, $6) RETURNING product_id`,
-      [name, description, price, quantity, categoryid, imageUrl]
+      `INSERT INTO products (name, description, price, quantity, categoryid, category, image_url) 
+      VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING product_id`,
+      [name, description, price, quantity, categoryid, normalizedCategory, imageUrl]
     );
 
     res.status(201).json({ message: "Product created successfully", product: result.rows[0] });
@@ -46,7 +49,9 @@ const getAllCategories = async (req, res) => {
     const categoryQuery = await client.query(
       `SELECT DISTINCT category FROM products`
     );
-    res.status(200).json(categoryQuery.rows.map(row => row.category));
+    const categories = categoryQuery.rows.map(row => row.category);
+    console.log('Categories sent to frontend:', categories);
+    res.status(200).json(categories);
     console.log('📂 Categories fetched successfully:', categoryQuery.rows.length);
   } catch (error) {
     console.error('Error fetching categories:', error);

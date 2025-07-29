@@ -141,18 +141,25 @@ export const deleteProduct = async (req, res) => {
   }
 };
 
-// Update all product fields (except id)
+// Update product details (excluding name, category, and image_url)
 export const updateProduct = async (req, res) => {
-  const { product_id, name, category, price, stock, description, image_url, discount_percentage, vat_percentage } = req.body;
+  console.log('updateProduct called with:', req.body, req.params);
+  const { price, stock, description, vat_percentage, discount_percentage, discount_started, discount_finished, points_rewarded } = req.body;
+  const product_id = req.params.id;
   const admin_id = req.user && req.user.id; // Get admin_id from authenticated user
   if (!admin_id) {
     return res.status(400).json({ error: 'Admin ID is required' });
   }
   try {
     const result = await client.query(
-      `UPDATE products SET name=$1, category=$2, price=$3, stock=$4, description=$5, image_url=$6, discount_percentage=$7, vat_percentage=$8, updated_by_admin_id=$9 WHERE product_id=$10 RETURNING *`,
-      [name, category, price, stock, description, image_url, discount_percentage, vat_percentage, admin_id, product_id]
+      `UPDATE products 
+       SET price=$1, stock=$2, description=$3, vat_percentage=$4, discount_percentage=$5, discount_started=$6, discount_finished=$7, points_rewarded=$8, updated_by_admin_id=$9, last_updated=NOW()
+       WHERE product_id=$10 RETURNING *`,
+      [price, stock, description, vat_percentage, discount_percentage, discount_started, discount_finished, points_rewarded, admin_id, product_id]
     );
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
     res.json(result.rows[0]);
   } catch (err) {
     res.status(500).json({ error: 'Failed to update product' });

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
-import heroImage from '@/assets/hero-grocery.jpg';
+import greenbasketryHero from '../../assets/greenbasketry-hero.png';
 import logo from '@/assets/logo.png';
 
 interface SignupProps {
@@ -145,17 +145,37 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
 
       const data = await res.json();
       if (res.ok) {
-        // Store user data in localStorage
-        if (data.userId) {
-          localStorage.setItem('userId', String(data.userId));
-        }
-        localStorage.setItem('role', role);
+        // Clear all existing auth data first to prevent conflicts
+        const roles = ['admin', 'customer', 'rider'];
+        roles.forEach(r => {
+          localStorage.removeItem(`${r}_token`);
+          localStorage.removeItem(`${r}_user`);
+          localStorage.removeItem(`${r}_userId`);
+        });
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        localStorage.removeItem('role');
+        localStorage.removeItem('userId');
+
+        // Store user data in localStorage with consistent structure
         if (data.token) {
           localStorage.setItem('token', data.token);
         }
+        if (data.user) {
+          localStorage.setItem('user', JSON.stringify(data.user));
+        }
+        if (data.userId) {
+          localStorage.setItem('userId', String(data.userId));
+        }
+        if (data.role) {
+          localStorage.setItem('role', data.role);
+        }
         
-        console.log('User ID saved to localStorage:', data.userId);
-        console.log('Role saved to localStorage:', role);
+        console.log('User data saved to localStorage:', {
+          userId: data.userId,
+          role: data.role,
+          user: data.user
+        });
 
         toast({
           title: "Account Created Successfully!",
@@ -163,9 +183,9 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
         });
 
         setTimeout(() => {
-          if (role === 'admin') {
+          if (data.role === 'admin') {
             navigate('/admin');
-          } else if (role === 'rider') {
+          } else if (data.role === 'rider') {
             navigate('/rider/home');
           } else {
             navigate('/home');
@@ -198,14 +218,13 @@ const Signup: React.FC<SignupProps> = ({ onClose, onSwitchToLogin }) => {
         <div className="hidden lg:block relative">
           <div className="relative overflow-hidden rounded-2xl shadow-card-hover">
             <img 
-              src={heroImage} 
-              alt="Fresh groceries" 
+              src={greenbasketryHero} 
+              alt="GreenBasketry" 
               className="w-full h-[700px] object-cover"
             />
             <div className="absolute inset-0 bg-gradient-to-t from-primary/90 via-primary/20 to-transparent" />
             <div className="absolute bottom-8 left-8 text-white">
-              <h2 className="text-3xl font-bold mb-2">Join GreenBasketry</h2>
-              <p className="text-lg opacity-90">Start your journey to fresh, organic groceries</p>
+              <h2 className="text-3xl font-bold mb-2">স্বাচ্ছন্দ্যে কিনাকাটায়, আজই অ্যাকাউন্ট তৈরি করুন</h2>
             </div>
           </div>
         </div>

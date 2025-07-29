@@ -77,6 +77,25 @@ const navLinks: NavLink[] = [
   { to: 'rider-stats', label: 'Rider Statistics', icon: <AssessmentIcon /> },
   { to: 'activity-logs', label: 'Activity Logs', icon: <HistoryIcon /> },
 ];
+// Remove or comment out any navLinks that do not match a real route in App.tsx
+
+interface DashboardStats {
+  total_orders: number;
+  total_products: number;
+  total_customers: number;
+  total_riders: number;
+  total_admins: number;
+  today_orders: number;
+  pending_orders: number;
+  delivered_orders: number;
+  cancelled_orders: number;
+  pending_complaints: number;
+  active_riders: number;
+  in_stock_products: number;
+  out_of_stock_products: number;
+  total_revenue: number;
+  today_revenue: number;
+}
 
 const AdminDashboardContent: React.FC = () => {
   const location = useLocation();
@@ -84,6 +103,34 @@ const AdminDashboardContent: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const currentUser = getCurrentUser();
+  const [dashboardStats, setDashboardStats] = React.useState<DashboardStats | null>(null);
+  const [loading, setLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  const fetchDashboardStats = async () => {
+    try {
+      setLoading(true);
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5001/api/admin/dashboard-stats', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        setDashboardStats(data.stats);
+      }
+    } catch (error) {
+      console.error('Error fetching dashboard stats:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -363,7 +410,7 @@ const AdminDashboardContent: React.FC = () => {
                   <Box sx={{ display: 'flex', gap: 2, maxWidth: 200 }}>
                     <Card sx={{ textAlign: 'center', py: 1, flex: 1 }}>
                       <Typography variant="h6" color="primary.main">
-                        24
+                        {loading ? '...' : dashboardStats?.total_orders || '--'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Orders
@@ -371,7 +418,7 @@ const AdminDashboardContent: React.FC = () => {
                     </Card>
                     <Card sx={{ textAlign: 'center', py: 1, flex: 1 }}>
                       <Typography variant="h6" color="secondary.main">
-                        156
+                        {loading ? '...' : dashboardStats?.total_products || '--'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Products

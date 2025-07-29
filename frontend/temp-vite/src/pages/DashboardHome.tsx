@@ -401,7 +401,7 @@ const DashboardHome: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Button
               component={Link}
-              to="coupons"
+              to="/admin/coupons"
               variant="outlined"
               startIcon={<CouponsIcon />}
               fullWidth

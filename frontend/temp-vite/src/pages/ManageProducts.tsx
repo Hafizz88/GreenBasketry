@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 interface Product {
   product_id: number;
@@ -26,6 +27,7 @@ const getAuthHeader = () => {
 const ManageProducts: React.FC = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetchProducts();
@@ -217,7 +219,7 @@ const ManageProducts: React.FC = () => {
                   🗑️ Delete
                 </button>
                 <button 
-                  onClick={() => alert('Edit functionality coming soon!')}
+                  onClick={() => navigate(`/admin/products/${prod.product_id}/edit`)}
                   style={{ 
                     flex: 1,
                     padding: '8px 16px', 

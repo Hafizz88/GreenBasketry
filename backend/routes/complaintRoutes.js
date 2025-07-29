@@ -1,4 +1,4 @@
-import verifyToken from "../middleware/verifytoken.js";
+import verifyToken from '../middleware/verifyToken.js';
 import express from "express";
 import { createComplaint, getAllComplaints, getComplaintsByCustomer, resolveComplaint } from "../controllers/complaintController.js";
 

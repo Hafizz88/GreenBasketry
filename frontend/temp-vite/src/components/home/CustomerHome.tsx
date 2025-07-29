@@ -641,7 +641,7 @@ const CustomerHome: React.FC<CustomerHomeProps> = ({ onShowAuth }) => {
             {activeTab === 'categories' && (
               <div className="space-y-2">
                 <h3 className="font-semibold text-foreground mb-4">Browse Categories</h3>
-                {categories.map((category) => (
+                {[...new Set(categories)].map((category) => (
                   <button
                     key={category}
                     onClick={() => handleCategoryClick(category)}

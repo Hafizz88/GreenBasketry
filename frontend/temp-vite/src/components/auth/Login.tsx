@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import greenbasketryHero from '../../assets/greenbasketry-hero.png';
 
 const Login: React.FC = () => {
   const [formData, setFormData] = useState({
@@ -42,11 +43,26 @@ const Login: React.FC = () => {
 
       const { token, user, role } = response.data;
 
+      // Clear all existing auth data first to prevent conflicts
+      const roles = ['admin', 'customer', 'rider'];
+      roles.forEach(r => {
+        localStorage.removeItem(`${r}_token`);
+        localStorage.removeItem(`${r}_user`);
+        localStorage.removeItem(`${r}_userId`);
+      });
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      localStorage.removeItem('role');
+      localStorage.removeItem('userId');
+
       // Store authentication data
       localStorage.setItem('token', token);
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('role', role);
-      localStorage.setItem('userId', user[`${role}_id`] || user.id);
+      
+      // Store user ID consistently - use the ID from the token payload
+      const tokenPayload = JSON.parse(atob(token.split('.')[1]));
+      localStorage.setItem('userId', tokenPayload.id.toString());
 
       // Redirect based on role
       if (role === 'admin') {
@@ -76,22 +92,13 @@ const Login: React.FC = () => {
   return (
     <div className="min-h-screen flex">
       {/* Left Sidebar */}
-      <div className="hidden lg:flex lg:w-1/2 bg-green-600 relative">
-        <div className="absolute inset-0 bg-black bg-opacity-40"></div>
-        <div className="relative z-10 flex flex-col justify-center items-center text-white px-12">
-          <div className="text-center">
-            <h1 className="text-6xl font-bold mb-4">GROCERY HERO</h1>
-            <p className="text-xl mb-2">Fresh & Organic</p>
-            <p className="text-lg">groceries delivered to your door</p>
-          </div>
-        </div>
-        <div className="absolute inset-0 bg-gradient-to-br from-green-600 to-green-800 opacity-90"></div>
-        <div className="absolute inset-0 flex items-center justify-center">
-          <div className="w-64 h-64 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
-            <div className="text-center text-white">
-              <div className="text-8xl mb-4">🛒</div>
-            </div>
-          </div>
+      <div className="hidden lg:flex lg:w-1/2 bg-white relative">
+        <div className="relative overflow-hidden rounded-2xl shadow-card-hover w-full h-full flex items-center justify-center">
+          <img 
+            src={greenbasketryHero} 
+            alt="GreenBasketry" 
+            className="w-full h-full object-contain p-8"
+          />
         </div>
       </div>
 

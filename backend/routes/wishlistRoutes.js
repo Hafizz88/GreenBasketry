@@ -1,6 +1,6 @@
 import express from 'express';
 import { getWishlist, addToWishlist, removeFromWishlist } from '../controllers/wishlistController.js';
-import verifyToken from '../middleware/verifytoken.js'; // Import the token verification middleware if needed
+import verifyToken from '../middleware/verifyToken.js'; // Import the token verification middleware if needed
 const router = express.Router();
 // Define routes for wishlist operations
 router.get('/', verifyToken, getWishlist); // GET /api/wishlist?customer_id=1

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,12 +37,51 @@ import ManageRiders from './pages/ManageRiders';
 import ManageAdmins from './pages/ManageAdmins';
 import AdminActivityLogs from "./pages/AdminActivityLogs";
 import RiderStats from './pages/RiderStats';
+import { isAuthenticated } from './utils/auth';
+import EditProduct from "./pages/EditProduct";
 
 const queryClient = new QueryClient();
 
 const App = () => {
   const [showAuth, setShowAuth] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+
+  // Periodic token check to prevent unexpected logouts
+  useEffect(() => {
+    const checkToken = async () => {
+      if (!isAuthenticated()) {
+        window.location.href = '/login';
+        return;
+      }
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await fetch('http://localhost:5001/api/auth/verify-token', {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+          if (response.status === 401 || response.status === 403) {
+            // Only log out if the backend says the token is invalid/expired
+            window.location.href = '/login';
+          }
+          // If response is 500 or network error, do NOT log out
+        }
+      } catch (error) {
+        // Network error: do NOT log out, maybe show a warning or retry later
+        console.warn('Network error during token validation. Will retry later.');
+      }
+    };
+
+    const interval = setInterval(checkToken, 5 * 60 * 1000);
+    const handleFocus = () => { checkToken(); };
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', handleFocus);
+    };
+  }, []);
 
   const handleShowAuth = () => {
     setShowAuth(true);
@@ -74,7 +113,7 @@ const App = () => {
             <Route
               path="/home"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="customer">
                   <HomePage onShowAuth={handleShowAuth} />
                 </ProtectedRoute>
               }
@@ -130,7 +169,7 @@ const App = () => {
             <Route
               path="/rider/home"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="rider">
                   <RiderHome />
                 </ProtectedRoute>
               }
@@ -179,7 +218,7 @@ const App = () => {
             <Route
               path="/admin"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requiredRole="admin">
                   <AdminDashboard />
                 </ProtectedRoute>
               }
@@ -188,6 +227,7 @@ const App = () => {
               <Route path="dashboard" element={<DashboardHome />} />
               <Route path="products" element={<ManageProducts />} />
               <Route path="add-product" element={<AddProduct />} />
+              <Route path="products/:id/edit" element={<EditProduct />} />
               <Route path="coupons" element={<ManageCoupons />} />
               <Route path="set-discount" element={<SetDiscount />} />
               <Route path="complaints" element={<ComplaintsAdminPage />} />

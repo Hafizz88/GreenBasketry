@@ -13,7 +13,7 @@ import {
   getProductReviews 
 } from '../controllers/productController.js';
 import { upload } from '../controllers/cloudinaryController.js'; // Import multer configuration for Cloudinary
-import verifyToken from '../middleware/verifytoken.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 // Routes for product operations
 router.get('/', getAllProducts);

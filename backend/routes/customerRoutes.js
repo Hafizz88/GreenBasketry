@@ -1,7 +1,7 @@
 import express from 'express';
 import { getCustomerById ,getAddressesByCustomer, setAddressesByCustomer} from '../controllers/customerController.js';
 import { getAllCoupons } from '../controllers/adminController.js';
-import verifyToken from '../middleware/verifytoken.js';
+import verifyToken from '../middleware/verifyToken.js';
 
 const router = express.Router();
 
