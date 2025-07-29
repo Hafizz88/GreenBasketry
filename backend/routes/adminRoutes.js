@@ -16,7 +16,8 @@ import {
   getRiderStats,
   getAllRidersWithStats,
   getAdminActivityLogs,
-  getAdminActivitySummary
+  getAdminActivitySummary,
+  getDashboardStats
 } from '../controllers/adminController.js';
 import verifyToken from '../middleware/verifytoken.js';
 import { upload } from '../controllers/cloudinaryController.js';
@@ -55,5 +56,8 @@ router.get('/riders-with-stats', verifyToken, getAllRidersWithStats);
 // Admin activity log routes
 router.get('/activity-logs', verifyToken, getAdminActivityLogs);
 router.get('/activity-summary', verifyToken, getAdminActivitySummary);
+
+// Dashboard statistics route
+router.get('/dashboard-stats', verifyToken, getDashboardStats);
 
 export default router;

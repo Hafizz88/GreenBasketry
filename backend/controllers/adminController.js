@@ -617,3 +617,65 @@ export const getAdminActivitySummary = async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch admin activity summary' });
   }
 };
+
+// Get admin dashboard statistics
+export const getDashboardStats = async (req, res) => {
+  try {
+    // Get total counts
+    const statsQuery = await client.query(`
+      SELECT 
+        (SELECT COUNT(*) FROM orders) as total_orders,
+        (SELECT COUNT(*) FROM products) as total_products,
+        (SELECT COUNT(*) FROM customers) as total_customers,
+        (SELECT COUNT(*) FROM riders) as total_riders,
+        (SELECT COUNT(*) FROM admins) as total_admins,
+        (SELECT COUNT(*) FROM orders WHERE DATE(order_date) = CURRENT_DATE) as today_orders,
+        (SELECT COUNT(*) FROM orders WHERE order_status = 'pending') as pending_orders,
+        (SELECT COUNT(*) FROM orders WHERE order_status = 'delivered') as delivered_orders,
+        (SELECT COUNT(*) FROM orders WHERE order_status = 'cancelled') as cancelled_orders,
+        (SELECT COUNT(*) FROM complaints WHERE resolved = false) as pending_complaints,
+        (SELECT COUNT(*) FROM riders WHERE available = true) as active_riders,
+        (SELECT COUNT(*) FROM products WHERE stock > 0) as in_stock_products,
+        (SELECT COUNT(*) FROM products WHERE stock = 0) as out_of_stock_products,
+        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE order_status = 'delivered') as total_revenue,
+        (SELECT COALESCE(SUM(total_amount), 0) FROM orders WHERE DATE(order_date) = CURRENT_DATE AND order_status = 'delivered') as today_revenue
+    `);
+
+    // Get recent activity
+    const recentOrdersQuery = await client.query(`
+      SELECT 
+        o.order_id,
+        o.order_date,
+        o.total_amount,
+        o.order_status,
+        c.name as customer_name
+      FROM orders o
+      JOIN carts cart ON o.cart_id = cart.cart_id
+      JOIN customers c ON cart.customer_id = c.customer_id
+      ORDER BY o.order_date DESC
+      LIMIT 5
+    `);
+
+    // Get top selling products
+    const topProductsQuery = await client.query(`
+      SELECT 
+        p.name,
+        p.product_id,
+        COUNT(bh.customer_id) as times_purchased
+      FROM products p
+      LEFT JOIN buy_history bh ON p.product_id = bh.product_id
+      GROUP BY p.product_id, p.name
+      ORDER BY times_purchased DESC
+      LIMIT 5
+    `);
+
+    res.json({
+      stats: statsQuery.rows[0],
+      recentOrders: recentOrdersQuery.rows,
+      topProducts: topProductsQuery.rows
+    });
+  } catch (err) {
+    console.error('Error fetching dashboard stats:', err);
+    res.status(500).json({ error: 'Failed to fetch dashboard statistics' });
+  }
+};
