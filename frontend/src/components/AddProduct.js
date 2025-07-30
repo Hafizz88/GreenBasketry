@@ -95,7 +95,17 @@ function AddProduct() {
         { headers: getAuthHeader() }
       );
 
-      alert('✅ Product added successfully!');
+      // Handle the new response format
+      const { action, message, product: createdProduct, previousValues } = res.data;
+      const actionText = action === 'updated' ? 'updated' : 'added';
+      
+      if (action === 'updated' && previousValues) {
+        alert(`✅ ${message} Product was ${actionText} successfully! 
+          Previous price: $${previousValues.price}, Previous stock: ${previousValues.stock}
+          New price: $${createdProduct.price}, New stock: ${createdProduct.stock}`);
+      } else {
+        alert(`✅ ${message} Product was ${actionText} successfully!`);
+      }
       setProduct({ // Reset form
         name: '',
         category: '',

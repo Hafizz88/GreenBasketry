@@ -37,12 +37,90 @@ export const addProduct = async (req, res) => {
       imageUrl = await uploadImageToCloudinary(req.file.buffer, folderPath);
     }
 
+    // Check for existing product with same name and category
+    const existingProductCheck = await client.query(
+      'SELECT product_id, name, category, price, stock FROM products WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND LOWER(TRIM(category)) = LOWER(TRIM($2))',
+      [name, category]
+    );
+
+    if (existingProductCheck.rows.length > 0) {
+      // Product with same name and category exists - UPDATE it
+      const existingProduct = existingProductCheck.rows[0];
+      console.log(`🔄 Updating existing product: ${existingProduct.name} (ID: ${existingProduct.product_id}) in category: ${existingProduct.category}`);
+      console.log(`   Old values - Price: ${existingProduct.price}, Stock: ${existingProduct.stock}`);
+      console.log(`   New values - Price: ${price}, Stock: ${stock}`);
+      
+      // Validate that we're not setting stock to negative
+      if (stock < 0) {
+        return res.status(400).json({ 
+          error: 'Stock cannot be negative',
+          details: 'Please enter a valid stock quantity (0 or greater)'
+        });
+      }
+      
+      const updateResult = await client.query(
+        `UPDATE products 
+         SET price = $1, stock = $2, description = $3, image_url = COALESCE($4, image_url), 
+             discount_percentage = $5, vat_percentage = $6, discount_started = $7, 
+             discount_finished = $8, points_rewarded = $9, updated_by_admin_id = $10, last_updated = NOW()
+         WHERE product_id = $11 RETURNING *`,
+        [price, stock, description, imageUrl, discount_percentage, vat_percentage, discount_started, discount_finished, points_rewarded, admin_id, existingProduct.product_id]
+      );
+      
+      console.log(`✅ Product updated successfully: ${updateResult.rows[0].name} (ID: ${updateResult.rows[0].product_id})`);
+      return res.status(200).json({
+        message: 'Product updated successfully',
+        action: 'updated',
+        product: updateResult.rows[0],
+        previousValues: {
+          price: existingProduct.price,
+          stock: existingProduct.stock
+        }
+      });
+    }
+
+    // Check for products with same name but different category
+    const sameNameDifferentCategory = await client.query(
+      'SELECT product_id, name, category FROM products WHERE LOWER(TRIM(name)) = LOWER(TRIM($1)) AND LOWER(TRIM(category)) != LOWER(TRIM($2))',
+      [name, category]
+    );
+
+    if (sameNameDifferentCategory.rows.length > 0) {
+      console.log(`📝 Found ${sameNameDifferentCategory.rows.length} product(s) with same name but different category:`);
+      sameNameDifferentCategory.rows.forEach(product => {
+        console.log(`   - ${product.name} in category: ${product.category} (ID: ${product.product_id})`);
+      });
+      console.log(`🆕 Creating new product: ${name} in category: ${category}`);
+    }
+
+    // Validate inputs before creating new product
+    if (stock < 0) {
+      return res.status(400).json({ 
+        error: 'Stock cannot be negative',
+        details: 'Please enter a valid stock quantity (0 or greater)'
+      });
+    }
+    
+    if (price < 0) {
+      return res.status(400).json({ 
+        error: 'Price cannot be negative',
+        details: 'Please enter a valid price (0 or greater)'
+      });
+    }
+
+    // Create new product (either no existing product with same name, or same name but different category)
     const result = await client.query(
       `INSERT INTO products (name, category, price, stock, description, image_url, discount_percentage, vat_percentage, updated_by_admin_id, discount_started, discount_finished, points_rewarded)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12) RETURNING *`,
       [name, category, price, stock, description, imageUrl, discount_percentage, vat_percentage, admin_id, discount_started, discount_finished, points_rewarded]
     );
-    res.status(201).json(result.rows[0]);
+    
+    console.log(`✅ New product created successfully: ${result.rows[0].name} (ID: ${result.rows[0].product_id}) in category: ${result.rows[0].category}`);
+    res.status(201).json({
+      message: 'Product created successfully',
+      action: 'created',
+      product: result.rows[0]
+    });
   } catch (err) {
     console.error('Error adding product:', err);
     

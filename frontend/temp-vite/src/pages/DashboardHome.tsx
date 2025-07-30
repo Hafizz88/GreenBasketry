@@ -389,7 +389,7 @@ const DashboardHome: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Button
               component={Link}
-              to="add-product"
+              to="/admin/add-product"
               variant="contained"
               startIcon={<AddIcon />}
               fullWidth
@@ -413,7 +413,7 @@ const DashboardHome: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Button
               component={Link}
-              to="complaints"
+              to="/admin/complaints"
               variant="outlined"
               startIcon={<ComplaintsIcon />}
               fullWidth
@@ -425,7 +425,7 @@ const DashboardHome: React.FC = () => {
           <Grid item xs={12} sm={6} md={3}>
             <Button
               component={Link}
-              to="rider-stats"
+              to="/admin/rider-stats"
               variant="outlined"
               startIcon={<RiderStatsIcon />}
               fullWidth

@@ -93,13 +93,24 @@ const AddProduct: React.FC = () => {
       formData.append('points_rewarded', form.points_rewarded);
       formData.append('image', selectedImage);
 
-      await axios.post(
+      const response = await axios.post(
         'http://localhost:5001/api/admin/add-product',
         formData,
         getAuthHeadersFormData()
       );
       
-      setSuccess('Product added successfully!');
+      // Handle the new response format
+      const { action, message, product, previousValues } = response.data;
+      const actionText = action === 'updated' ? 'updated' : 'added';
+      
+      if (action === 'updated' && previousValues) {
+        setSuccess(`${message} Product was ${actionText} successfully! 
+          Previous price: $${previousValues.price}, Previous stock: ${previousValues.stock}
+          New price: $${product.price}, New stock: ${product.stock}`);
+      } else {
+        setSuccess(`${message} Product was ${actionText} successfully!`);
+      }
+      
       setForm({ 
         name: '', 
         category: '', 
