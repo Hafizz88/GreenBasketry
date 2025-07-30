@@ -19,6 +19,21 @@
   padding: 2rem 1.5rem 1rem 1.5rem;
   letter-spacing: 1px;
   border-bottom: 1px solid #393963;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.admin-logo:hover {
+  background: rgba(255, 255, 255, 0.1);
+  transform: translateY(-1px);
+}
+
+.admin-logo a {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .admin-sidebar nav ul {

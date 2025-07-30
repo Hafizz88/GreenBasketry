@@ -25,7 +25,8 @@ import {
   Grid,
   Paper,
   Chip,
-  Button
+  Button,
+  Tooltip
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -42,7 +43,8 @@ import {
   Assessment as AssessmentIcon,
   History as HistoryIcon,
   Logout as LogoutIcon,
-  BarChart as SalesReportIcon
+  BarChart as SalesReportIcon,
+  Home as HomeIcon
 } from '@mui/icons-material';
 import ComplaintsAdminPage from './ComplaintsAdminPage';
 import { logout, getCurrentUser } from '../utils/auth';
@@ -148,38 +150,49 @@ const AdminDashboardContent: React.FC = () => {
   const drawer = (
     <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
       {/* Header */}
-      <Box
-        sx={{
-          p: 3,
-          background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
-          color: 'white',
-          textAlign: 'center',
-        }}
-      >
-        <Avatar
+      <Tooltip title="Click to go to main dashboard" placement="right">
+        <Box
           sx={{
-            width: 64,
-            height: 64,
-            mx: 'auto',
-            mb: 2,
-            bgcolor: 'rgba(255,255,255,0.2)',
-            fontSize: '1.5rem',
+            p: 3,
+            background: 'linear-gradient(135deg, #1976d2 0%, #1565c0 100%)',
+            color: 'white',
+            textAlign: 'center',
+            cursor: 'pointer',
+            '&:hover': {
+              background: 'linear-gradient(135deg, #1565c0 0%, #0d47a1 100%)',
+              transition: 'background 0.3s ease',
+            },
           }}
+          component={Link}
+          to=""
+          style={{ textDecoration: 'none', color: 'inherit' }}
         >
-          👨‍💼
-        </Avatar>
-        <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5 }}>
-          Admin Panel
-        </Typography>
-        <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
-          GreenBasketry Management
-        </Typography>
-        {currentUser && (
-          <Typography variant="caption" sx={{ opacity: 0.7 }}>
-            Logged in as: {currentUser.name || currentUser.email || 'Admin'}
+          <Avatar
+            sx={{
+              width: 64,
+              height: 64,
+              mx: 'auto',
+              mb: 2,
+              bgcolor: 'rgba(255,255,255,0.2)',
+              fontSize: '1.5rem',
+            }}
+          >
+            👨‍💼
+          </Avatar>
+          <Typography variant="h6" sx={{ fontWeight: 600, mb: 0.5, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+            <HomeIcon sx={{ fontSize: 20 }} />
+            Admin Panel
           </Typography>
-        )}
-      </Box>
+          <Typography variant="body2" sx={{ opacity: 0.8, mb: 2 }}>
+            GreenBasketry Management
+          </Typography>
+          {currentUser && (
+            <Typography variant="caption" sx={{ opacity: 0.7 }}>
+              Logged in as: {currentUser.name || currentUser.email || 'Admin'}
+            </Typography>
+          )}
+        </Box>
+      </Tooltip>
 
       <Divider />
 
@@ -270,7 +283,10 @@ const AdminDashboardContent: React.FC = () => {
               <MenuIcon />
             </IconButton>
             <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-              Admin Dashboard
+              <Link to="" style={{ textDecoration: 'none', color: 'inherit', display: 'flex', alignItems: 'center', gap: 1 }}>
+                <HomeIcon sx={{ fontSize: 20 }} />
+                Admin Dashboard
+              </Link>
             </Typography>
             <IconButton
               color="inherit"
@@ -435,6 +451,30 @@ const AdminDashboardContent: React.FC = () => {
 
         {/* Page Content */}
         <Container maxWidth="xl">
+          {/* Breadcrumb Navigation */}
+          <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Link to="" style={{ textDecoration: 'none', color: 'inherit' }}>
+              <Chip
+                icon={<HomeIcon />}
+                label="Dashboard"
+                color="primary"
+                variant="outlined"
+                clickable
+                sx={{ '&:hover': { backgroundColor: 'primary.main', color: 'white' } }}
+              />
+            </Link>
+            {location.pathname !== '/admin/dashboard' && (
+              <>
+                <Typography variant="body2" color="text.secondary">/</Typography>
+                <Chip
+                  label={navLinks.find(link => location.pathname.includes(link.to))?.label || 'Current Page'}
+                  variant="outlined"
+                  color="secondary"
+                />
+              </>
+            )}
+          </Box>
+          
           <Paper
             elevation={0}
             sx={{
