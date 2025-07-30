@@ -1,6 +1,7 @@
 import { client } from "../db.js";
 import { io } from '../index.js';
 import { addNotification } from './notificationController.js';
+import { comparePassword } from '../utils/hash.js';
 
 // Rider login
 const riderLogin = async (req, res) => {
@@ -19,11 +20,11 @@ const riderLogin = async (req, res) => {
     
     const rider = riderQuery.rows[0];
     
-    // TODO: Add password verification here using your hash utility
-    // const isValidPassword = await verifyPassword(password, rider.password_hash);
-    // if (!isValidPassword) {
-    //   return res.status(401).json({ error: 'Invalid credentials' });
-    // }
+    // Verify password using hash utility
+    const isValidPassword = await comparePassword(password, rider.password_hash);
+    if (!isValidPassword) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
     
     res.status(200).json({
       rider_id: rider.rider_id,

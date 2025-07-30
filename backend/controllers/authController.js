@@ -90,7 +90,7 @@ const signup = async (req, res) => {
 
   try {
     let passwordToStore = password;
-    if (role === 'customer') {
+    if (role === 'customer' || role === 'rider') {
       passwordToStore = await hashPassword(password);
     }
 
